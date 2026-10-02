@@ -10,7 +10,7 @@ export interface Props {
 }
 
 const { tierName, price, features = [], href, tone = 'blue' } = Astro.props as Props
-const toneClass = tone === 'yellow' ? 'bg-pastel-yellow' : 'bg-pastel-blue'
+const toneClass = tone === 'yellow' ? 'bg-pastel-sun' : 'bg-pastel-sky'
 ---
 
 <div class={`${toneClass} rounded-card p-6`}>

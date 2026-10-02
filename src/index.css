@@ -1,3 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* VVF Design System Tokens */
+    --color-bg: #ffffff;
+    --color-surface: #f2f2f2;
+    --color-fg: #333333;
+    --color-muted: #758696;
+    --color-border: #e7e7e7;
+    --color-accent: #02335e;
+    --color-accent-secondary: #00abf9;
+
+    /* Layout */
+    --radius: 8px;
+    --border-width: 1px;
+    --baseline: 8px;
+  }
+
+  html {
+    font-family: 'Open Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--color-fg);
+    background: var(--color-bg);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  }
+}

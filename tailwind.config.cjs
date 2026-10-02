@@ -1,32 +1,42 @@
 /** @type {import('tailwindcss').Config} */
-// Tokens approximated from Victoria Venezuela Foundation.pdf (Figma export)
-// screenshots. Swap for exact hex values if the original Figma file's
-// variables become available.
+// VVF Design System tokens — do not approximate; these are exact.
 module.exports = {
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
   theme: {
     extend: {
       colors: {
+        // Semantic tokens
+        background: '#ffffff',
+        surface: '#f2f2f2',
+        foreground: '#333333',
+        muted: '#758696',
+        border: '#e7e7e7',
+        // Brand colors
         brand: {
-          navy: '#0B2C52',
-          'navy-dark': '#081F3A',
-          sky: '#29A9E1',
-          'sky-dark': '#1C8CC0',
+          navy: '#02335e',
+          'navy-dark': '#012244',
+          cyan: '#00abf9',
+          'cyan-dark': '#0095d9',
         },
+        // Legacy aliases for existing component compatibility
+        'brand-sky': '#00abf9',
+        'brand-sky-dark': '#0095d9',
+        // Feature card pastels (from design system posture)
         pastel: {
-          yellow: '#F7E7B4',
-          pink: '#F8D6DC',
-          blue: '#CFE9F7',
+          sun: '#f9eac6',
+          salmon: '#ffd7d7',
+          sky: '#c1e7f5',
         },
+        // Text shades
         ink: {
-          900: '#0F172A',
-          700: '#334155',
-          500: '#64748B',
+          900: '#333333',
+          700: '#4a4a4a',
+          500: '#758696',
         },
       },
       fontFamily: {
-        display: ['"Baloo 2"', 'system-ui', '-apple-system', 'sans-serif'],
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Poppins', 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        sans: ['Open Sans', 'system-ui', '-apple-system', 'Segoe UI', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
       fontSize: {
         eyebrow: ['0.75rem', { lineHeight: '1rem', letterSpacing: '0.1em' }],
@@ -38,7 +48,8 @@ module.exports = {
       },
       borderRadius: {
         pill: '999px',
-        card: '1.5rem',
+        card: '0.5rem', // 8px per design system
+        DEFAULT: '0.5rem',
       },
       maxWidth: {
         container: '80rem',
@@ -46,6 +57,9 @@ module.exports = {
       spacing: {
         section: '5rem',
         'section-sm': '3rem',
+      },
+      borderWidth: {
+        DEFAULT: '1px',
       },
     },
   },

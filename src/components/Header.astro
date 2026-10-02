@@ -20,7 +20,7 @@ const mobileItems = desktopItems.flatMap((item) => (item.children?.length ? item
               <li class="relative group">
                 <button
                   type="button"
-                  class="flex items-center gap-1 hover:text-brand-sky"
+                  class="flex items-center gap-1 hover:text-brand-cyan"
                   aria-haspopup="true"
                   aria-expanded="false"
                   data-dropdown-trigger
@@ -33,12 +33,12 @@ const mobileItems = desktopItems.flatMap((item) => (item.children?.length ? item
                   class="hidden group-focus-within:block md:absolute left-0 top-full mt-2 min-w-[220px] bg-white rounded-card shadow-lg p-2 z-20"
                 >
                   {item.children.map((child) => (
-                    <li><a href={child.url} class="block px-4 py-2 rounded-lg hover:bg-pastel-blue/40">{child.label}</a></li>
+                    <li><a href={child.url} class="block px-4 py-2 rounded-lg hover:bg-pastel-sky/40">{child.label}</a></li>
                   ))}
                 </ul>
               </li>
             ) : (
-              <li><a href={item.url} class="hover:text-brand-sky">{item.label}</a></li>
+              <li><a href={item.url} class="hover:text-brand-cyan">{item.label}</a></li>
             )
           )
         }
@@ -46,8 +46,8 @@ const mobileItems = desktopItems.flatMap((item) => (item.children?.length ? item
     </nav>
 
     <div class="hidden md:flex items-center gap-3">
-      <Button href="/contact" variant="outline-sky">Contact Us</Button>
-      <Button href={donateUrl} variant="primary-sky">Donate</Button>
+      <Button href="/contact" variant="outline-navy">Contact Us</Button>
+      <Button href={donateUrl} variant="primary-navy">Donate</Button>
     </div>
 
     <button
@@ -69,8 +69,8 @@ const mobileItems = desktopItems.flatMap((item) => (item.children?.length ? item
   >
     {mobileItems.map((item) => <li><a class="block py-2" href={item.url}>{item.label}</a></li>)}
     <li class="pt-2 flex gap-2">
-      <Button href="/contact" variant="outline-sky" size="sm" class="flex-1 text-center">Contact Us</Button>
-      <Button href={donateUrl} variant="primary-sky" size="sm" class="flex-1 text-center">Donate</Button>
+      <Button href="/contact" variant="outline-navy" size="sm" class="flex-1 text-center">Contact Us</Button>
+      <Button href={donateUrl} variant="primary-navy" size="sm" class="flex-1 text-center">Donate</Button>
     </li>
   </ul>
 </header>
