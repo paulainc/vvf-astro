@@ -12,6 +12,8 @@ export default defineConfig({
         { label: 'Getting Started', link: '/getting-started/' },
         { label: 'Architecture & Content Model', link: '/architecture/' },
         { label: 'Component Library', link: '/components/' },
+        { label: 'Design Tokens', link: '/design-tokens/' },
+        { label: 'Webflow Migration', link: '/migration/' },
         { label: 'Testing & CI', link: '/testing-and-ci/' },
       ],
     }),
