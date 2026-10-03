@@ -788,6 +788,40 @@
           "type": "image"
         }
       ]
+    },
+    {
+      "slug": "pages",
+      "label": "Static pages",
+      "labelSingular": "Static page",
+      "routable": false,
+      "titleField": "route_path",
+      "fields": [
+        {
+          "slug": "route_path",
+          "label": "Route path",
+          "type": "string",
+          "required": true,
+          "indexed": true
+        },
+        {
+          "slug": "source_file",
+          "label": "Source file",
+          "type": "string",
+          "required": true
+        },
+        {
+          "slug": "last_synced_at",
+          "label": "Last synced",
+          "type": "datetime"
+        },
+        {
+          "slug": "stale",
+          "label": "Stale (source file no longer found on disk)",
+          "type": "boolean",
+          "defaultValue": false,
+          "indexed": true
+        }
+      ]
     }
   ],
   "content": {

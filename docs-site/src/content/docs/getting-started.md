@@ -30,6 +30,19 @@ This starts the site at `http://localhost:4321` and the EmDash admin at `http://
 
 On first run, EmDash creates a local `data.db` and seeds it from [`seed/seed.json`](https://github.com/anclist/vvf-astro/blob/main/seed/seed.json) — the site's content schema (collections + fields) and starter content, both version-controlled. `data.db`, `.emdash/`, and `/uploads` are local/generated and gitignored; nothing about them needs to be committed.
 
+## Basecamp CLI
+
+Requirements for this project are tracked as cards on the VVF project's "Tareas" board in Basecamp, worked through as openspec changes. To connect:
+
+```bash
+curl -fsSL https://basecamp.com/install-cli | bash   # already run automatically in the dev container
+basecamp auth login                                  # one-time, opens a browser to approve
+```
+
+Once authenticated, `basecamp cards list -p 43742602` lists VVF's cards. When an openspec change implements a specific card, its `proposal.md` links to that card's Basecamp URL; archiving the change closes the loop with `basecamp cards done <id|url>`.
+
+In the dev container (no OS keyring available), the CLI stores credentials in plaintext at `~/.config/basecamp/credentials.json` — outside the repo, but treat that file as a secret on shared/ephemeral containers.
+
 ## Scripts
 
 | Script | What it does |

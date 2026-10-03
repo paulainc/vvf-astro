@@ -2,5 +2,8 @@
   "name": "vvf-astro",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "forwardPorts": [4321, 6006],
-  "postCreateCommand": "npm install && npx playwright install --with-deps && cd docs-site && npm install"
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/node/.local/bin"
+  },
+  "postCreateCommand": "(curl -fsSL https://basecamp.com/install-cli | bash || true); npm install && npx playwright install --with-deps && cd docs-site && npm install"
 }

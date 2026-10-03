@@ -36,6 +36,10 @@ await transform()
 emdash('seed', path.relative(ROOT_DIR, SEED_PATH), '--no-content')
 
 console.log(`\n▶ media (dev server on :${PORT})`)
+// The fresh database has no API tokens, so the static-page sync middleware
+// (src/middleware.ts) would fail with any EMDASH_SYNC_PAT from .env. Vite
+// prefers process.env over .env files; an empty value makes it skip the sync.
+process.env.EMDASH_SYNC_PAT = ''
 const server = await dev({ root: ROOT_DIR, server: { port: PORT }, logLevel: 'error' })
 let result
 try {

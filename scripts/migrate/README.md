@@ -57,6 +57,10 @@ npm run migrate:harvest      # images/PDFs → seed/media/, public/images/
 #    EmDash, regenerates seed/seed.json + seed/seed.local.json, applies them).
 npm run seed
 
+#    Reseeding replaces the database, so any EmDash API token (e.g.
+#    EMDASH_SYNC_PAT for the static-page sync) must be regenerated in the
+#    admin UI afterwards.
+
 # 4. Check the result.
 npm run test:unit
 npm run build && npm run preview   # then, in another terminal:
