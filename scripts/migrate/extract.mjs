@@ -82,7 +82,13 @@ export async function extract() {
   const sitemapUrls = parseSitemap(await get(`${LIVE_BASE_URL}/sitemap.xml`))
   const enUrls = sitemapUrls.filter((u) => !isSpanish(u))
   const { pages, items } = classifyUrls(enUrls)
-  writeSnapshot('sitemap', { urls: enUrls.map((u) => new URL(u).pathname || '/') })
+  // Committed (public repo): child detail URLs carry children's names, so
+  // they're left out here and live only in the gitignored children snapshot.
+  const paths = enUrls.map((u) => new URL(u).pathname || '/')
+  writeSnapshot('sitemap', {
+    urls: paths.filter((p) => !p.startsWith('/children/')),
+    childUrlCount: paths.filter((p) => p.startsWith('/children/')).length,
+  })
 
   // Static pages (structure + SEO) — also the source of page-level FAQs.
   const faqsByPage = {}

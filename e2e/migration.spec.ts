@@ -2,10 +2,22 @@ import { existsSync, readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 
 // English paths from the live sitemap, saved by `npm run migrate:extract`.
-const sitemap: string[] = JSON.parse(readFileSync(new URL('../scripts/migrate/snapshot/sitemap.json', import.meta.url), 'utf-8')).urls
-// Child pages only resolve where the (gitignored) child data was seeded.
-const hasChildren = existsSync(new URL('../seed/seed.local.json', import.meta.url))
-const paths = sitemap.filter((p) => hasChildren || !p.startsWith('/children/'))
+// The committed snapshot excludes child pages (public repo); their URLs come
+// from the gitignored children snapshot, and are only checked when the local
+// seed actually contains children (never in CI).
+const read = (rel: string) => JSON.parse(readFileSync(new URL(rel, import.meta.url), 'utf-8'))
+const sitemap: string[] = read('../scripts/migrate/snapshot/sitemap.json').urls
+const childSnapshot = new URL('../scripts/migrate/snapshot/children.json', import.meta.url)
+const localSeed = new URL('../seed/seed.local.json', import.meta.url)
+const hasChildren = existsSync(childSnapshot) && existsSync(localSeed) && (read('../seed/seed.local.json').content?.children?.length ?? 0) > 0
+const childPaths: string[] = hasChildren ? read('../scripts/migrate/snapshot/children.json').items.map((c: { url: string }) => new URL(c.url).pathname) : []
+const paths = [...sitemap, ...childPaths]
+const isChild = (p: string) => p.startsWith('/children/')
+// Never print child slugs (they contain children's names) — summarise them.
+function report(failures: string[]) {
+  const child = failures.filter(isChild)
+  return [...failures.filter((f) => !isChild(f)), ...(child.length ? [`${child.length} child page(s)`] : [])]
+}
 
 test.describe('legacy Webflow URLs', () => {
   test('redirect permanently to project routes', async ({ request }) => {
@@ -35,7 +47,7 @@ test.describe('legacy Webflow URLs', () => {
         failures.push(`${path} (${status})`)
       }
     }
-    expect(failures).toEqual([])
+    expect(report(failures)).toEqual([])
   })
 })
 
@@ -46,5 +58,5 @@ test('no page references Webflow or shows staging-only elements', async ({ reque
     if (/website-files\.com|webflow\.com/.test(html)) failures.push(`${path}: Webflow URL`)
     if (html.includes('Missing SEO fields')) failures.push(`${path}: staging SEO bar`)
   }
-  expect(failures).toEqual([])
+  expect(report(failures)).toEqual([])
 })
