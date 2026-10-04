@@ -11,7 +11,6 @@ describe('projectPathFor', () => {
     expect(projectPathFor('/resources-categories/all')).toBe('/resources')
     expect(projectPathFor('/resources-categories/stories')).toBe('/resources/category/stories')
     expect(projectPathFor('/team-members/join-our-board')).toBe('/contact')
-    expect(projectPathFor('/financials-and-transparency')).toBe('/resources/category/financials-transparency')
   })
 
   it('leaves unchanged paths alone', () => {

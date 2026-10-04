@@ -10,9 +10,6 @@ export const STATIC_REDIRECTS = {
   // Empty placeholder profile on live; its "Board seat open" card links to
   // the contact page, so the old URL goes there too.
   '/team-members/join-our-board': '/contact',
-  // Live page added after the migration; until it's built here, its reports
-  // live on the financials resource category.
-  '/financials-and-transparency': '/resources/category/financials-transparency',
 }
 
 // Dynamic patterns, in Astro redirect syntax.
