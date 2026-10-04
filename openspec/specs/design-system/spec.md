@@ -6,6 +6,27 @@ Defines the shared visual tokens (color, type, shape, spacing, layout) every com
 
 ## Requirements
 
+### Requirement: Typography scale
+The system SHALL define two font roles: a bold, rounded display face for headings and large stat numbers, and a plain sans body face for paragraph and UI text, each with a defined size scale from small (badges/eyebrows) to large (hero headings).
+
+#### Scenario: Eyebrow labels
+- **WHEN** a small uppercase label appears above a section heading (e.g. "IMPACT", "TRUST", "EVENTS & CAMPAIGNS")
+- **THEN** it renders in the accent color, small size, letter-spaced, uppercase
+
+### Requirement: Shape tokens
+The system SHALL define a pill radius (fully rounded) for buttons and badges, and a large rounded radius (rounded-2xl equivalent) for cards, images, and section panels.
+
+#### Scenario: Buttons are pills
+- **WHEN** any primary, secondary, or outline button is rendered
+- **THEN** its border-radius is fully rounded (pill shape), matching filled (`brand-sky` background) and outline (border only) variants
+
+### Requirement: Spacing and layout tokens
+The system SHALL define a constrained max-width content container, consistent section vertical padding, and a responsive grid step-down (4-up to 2-up to 1-up) for card grids between desktop and mobile.
+
+#### Scenario: Card grid collapses on mobile
+- **WHEN** a 4-column stat-tile or card grid is viewed at mobile width
+- **THEN** it renders as a single column, preserving card order
+
 ### Requirement: Live-site token source of truth
 Design tokens SHALL be derived from the live Webflow site's CSS custom properties. Where a live value conflicts with an existing project token, the live value SHALL win. Every token SHALL be documented with the live variable it came from.
 
