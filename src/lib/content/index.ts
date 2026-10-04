@@ -9,7 +9,8 @@
 // undefined only when the entry exists in neither locale. Pages never
 // implement fallback themselves.
 import { getEmDashCollection, getEmDashEntry, getMenu, type MenuItem } from 'emdash'
-import { DEFAULT_LOCALE, type Locale } from '../i18n'
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '../i18n'
+import { resolveCopy, type CopyManifest, type ResolvedCopy, type SlotSpec, type StoredSlot } from '../copy'
 import type {
   EventItem,
   ChildItem,
@@ -239,6 +240,27 @@ async function toEvent(e: LocalizedEntry, locale: Locale): Promise<EventItem> {
         : undefined,
       recapStats: d.recap_stats ?? undefined,
       benefitRows: d.benefit_rows ?? undefined,
+      appeal: d.appeal_heading
+        ? {
+            heading: d.appeal_heading,
+            text: d.appeal_text || undefined,
+            imageUrl: resolveImage(d.appeal_image),
+            imageAlt: d.appeal_image_alt || d.appeal_image?.alt,
+            caption: d.appeal_caption || undefined,
+            cardsLabel: d.appeal_cards_label || undefined,
+            cards: (d.appeal_cards ?? []).map((c: Record<string, string>) => ({
+              title: c.title,
+              text: c.text,
+              imageUrl: c.image_url || undefined,
+              imageAlt: c.image_alt || undefined,
+            })),
+            cta: d.appeal_cta_label && d.appeal_cta_url ? { label: d.appeal_cta_label, href: d.appeal_cta_url } : undefined,
+          }
+        : undefined,
+      contact:
+        d.contact_phone || d.contact_email || d.contact_address
+          ? { phone: d.contact_phone || undefined, email: d.contact_email || undefined, address: d.contact_address || undefined }
+          : undefined,
       seo: toSeo(d),
     } satisfies EventItem,
     e
@@ -504,6 +526,39 @@ export async function getCampaignSettings(locale: Locale = DEFAULT_LOCALE): Prom
     bannerText: d.banner_text,
     donorboxCampaignId: d.donorbox_campaign_id,
   }
+}
+
+// --- Page copy -----------------------------------------------------------
+
+async function storedSlots(route: string, locale: Locale): Promise<Map<string, StoredSlot>> {
+  const rows = await queryLocale('page_copy', { where: { route_path: route }, limit: 500 }, locale)
+  return new Map(
+    rows.map((r) => [
+      String(r.data.key),
+      { value: r.data.value, richValue: r.data.rich_value, imageUrl: resolveImage(r.data.image_value) } satisfies StoredSlot,
+    ])
+  )
+}
+
+// A page's declared copy slots in `locale` (each falling back to English,
+// then to its default from code), plus the locales that have at least one
+// slot value of their own — a static page "exists" in a locale for hreflang
+// purposes only when it has its own copy there.
+export async function getPageCopy<S extends Record<string, SlotSpec>>(
+  manifest: CopyManifest<S>,
+  locale: Locale = DEFAULT_LOCALE
+): Promise<{ copy: ResolvedCopy<S>; locales: Locale[] }> {
+  const byLocale = new Map(await Promise.all(LOCALES.map(async (l) => [l, await storedSlots(manifest.route, l)] as const)))
+  const english = byLocale.get(DEFAULT_LOCALE)!
+  const copy = resolveCopy(manifest, { requested: byLocale.get(locale) ?? english, english })
+  const declared = Object.keys(manifest.slots)
+  const hasOwnValue = (slots: Map<string, StoredSlot>) =>
+    declared.some((k) => {
+      const v = slots.get(k)
+      return Boolean((v?.value && v.value.trim()) || (v?.richValue && v.richValue.length) || v?.imageUrl)
+    })
+  const locales = LOCALES.filter((l) => l === DEFAULT_LOCALE || hasOwnValue(byLocale.get(l)!))
+  return { copy, locales }
 }
 
 // --- Navigation -----------------------------------------------------------
