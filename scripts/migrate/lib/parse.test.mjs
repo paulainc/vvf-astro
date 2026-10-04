@@ -146,3 +146,13 @@ describe('findAssetUrls', () => {
     expect(urls.filter((u) => u.endsWith('sponsor.png'))).toHaveLength(1)
   })
 })
+
+describe('parseChild (Spanish labels)', () => {
+  it('reads the Spanish field labels', () => {
+    const html = `<section class="section_child-detail"><h1>Ana</h1>
+      <h2>Fecha de nacimiento:</h2><p>1 de mayo de 2018</p>
+      <h2>Género:</h2><p>Femenino</p>
+      <h2>Sueño:</h2><p>Ser doctora</p></section>`
+    expect(parseChild(html)).toMatchObject({ displayName: 'Ana', birthday: '1 de mayo de 2018', gender: 'Femenino', dream: 'Ser doctora' })
+  })
+})

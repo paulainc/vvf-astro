@@ -53,7 +53,17 @@ export function parseSeo(html) {
 
 // --- Team --------------------------------------------------------------
 
-const TIER_BY_TAGLINE = { BOARD: 'board', LEADERSHIP: 'leader', LEADERS: 'leader', STAFF: 'staff' }
+const TIER_BY_TAGLINE = {
+  BOARD: 'board',
+  LEADERSHIP: 'leader',
+  LEADERS: 'leader',
+  STAFF: 'staff',
+  // Spanish (/es) section taglines.
+  'JUNTA DIRECTIVA': 'board',
+  LIDERAZGO: 'leader',
+  LÍDERES: 'leader',
+  PERSONAL: 'staff',
+}
 
 // Our Team index: every tier section with its members' per-tier role.
 // A person can appear in several tiers with a different title in each.
@@ -131,6 +141,16 @@ export function parseTeamMember(html) {
 
 // --- Children ----------------------------------------------------------
 
+// Field labels on child pages, by locale (Spanish pages use their own labels).
+const CHILD_FIELD_ALIASES = {
+  edad: 'age',
+  'fecha de nacimiento': 'birthday',
+  cumpleaños: 'birthday',
+  género: 'gender',
+  genero: 'gender',
+  sueño: 'dream',
+}
+
 export function parseChild(html) {
   const $ = load(html)
   const root = $('.section_child-detail')
@@ -139,7 +159,8 @@ export function parseChild(html) {
     const label = clean($(h).text())
     if (!label?.endsWith(':')) return
     const value = clean($(h).next().text())
-    if (value) fields[label.slice(0, -1).toLowerCase()] = value
+    const key = label.slice(0, -1).toLowerCase()
+    if (value) fields[CHILD_FIELD_ALIASES[key] ?? key] = value
   })
   const name = clean(root.find('h1').first().text())
   const aboutHeading = root.find('*').filter((_, e) => clean($(e).text())?.startsWith('About ') && !$(e).children().length).first()

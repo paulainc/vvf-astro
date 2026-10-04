@@ -1,0 +1,22 @@
+[
+  {
+    "tierName": "Patrocinador",
+    "price": "2.500 $/año",
+    "order": 1
+  },
+  {
+    "tierName": "Líder",
+    "price": "1.000 $/año",
+    "order": 2
+  },
+  {
+    "tierName": "Asesor",
+    "price": "$500/año",
+    "order": 3
+  },
+  {
+    "tierName": "Amigo",
+    "price": "$250/año",
+    "order": 4
+  }
+]
