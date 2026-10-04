@@ -347,3 +347,132 @@ describe('getPrimaryMenu', () => {
     expect(await getPrimaryMenu()).toEqual([])
   })
 })
+
+describe('locale resolution', () => {
+  // Rows as EmDash returns them: system columns live in `data`.
+  function row(slug: string, locale: string, group: string, data: Record<string, unknown>) {
+    return { slug, data: { ...data, locale, translationGroup: group } }
+  }
+
+  function byLocale(rows: Record<string, ReturnType<typeof row>[]>) {
+    getEmDashCollection.mockImplementation(async (_collection: string, filter: { locale?: string }) => ({
+      entries: rows[filter.locale ?? 'en'] ?? [],
+    }))
+  }
+
+  it('always passes the locale explicitly to EmDash', async () => {
+    byLocale({ en: [] })
+    await getEvents()
+    expect(getEmDashCollection).toHaveBeenCalledWith('events', expect.objectContaining({ locale: 'en' }))
+  })
+
+  it('serves the Spanish version when one exists, English otherwise, in English order', async () => {
+    byLocale({
+      en: [
+        row('golf-2026', 'en', 'g1', { title: 'Golf', start_date: '2026-06-01', location: 'Weston' }),
+        row('gala-2026', 'en', 'g2', { title: 'Gala', start_date: '2026-09-01', location: 'Miami' }),
+      ],
+      es: [row('golf-2026-es', 'es', 'g1', { title: 'Golf ES', start_date: '2026-06-01', location: 'Weston' })],
+    })
+    getEmDashEntry.mockResolvedValue({ entry: undefined })
+
+    const events = await getEvents('es')
+
+    expect(events.map((e) => [e.slug, e.title, e.fallbackLocale])).toEqual([
+      ['golf-2026-es', 'Golf ES', undefined],
+      ['gala-2026', 'Gala', 'en'],
+    ])
+  })
+
+  it('keeps entries that exist only in Spanish', async () => {
+    byLocale({
+      en: [],
+      es: [row('solo-es', 'es', 'g9', { question: '¿Qué?', answer: 'Esto', category: 'general' })],
+    })
+
+    expect(await getFaqs(undefined, 'es')).toEqual([
+      { question: '¿Qué?', answer: 'Esto', category: 'general', order: undefined },
+    ])
+  })
+
+  it('finds a detail entry by its Spanish slug or its English counterpart slug', async () => {
+    byLocale({
+      en: [row('impact-report', 'en', 'r1', { title: 'Impact Report' })],
+      es: [row('informe-de-impacto', 'es', 'r1', { title: 'Informe de impacto' })],
+    })
+
+    expect((await getResource('informe-de-impacto', 'es'))?.title).toBe('Informe de impacto')
+    expect((await getResource('impact-report', 'es'))?.title).toBe('Informe de impacto')
+  })
+
+  it('falls back to the English entry, then to not-found', async () => {
+    byLocale({ en: [row('impact-report', 'en', 'r1', { title: 'Impact Report' })], es: [] })
+
+    const fallback = await getResource('impact-report', 'es')
+    expect(fallback?.title).toBe('Impact Report')
+    expect(fallback?.fallbackLocale).toBe('en')
+    expect(await getResource('missing', 'es')).toBeUndefined()
+  })
+
+  it('resolves references to their Spanish translation', async () => {
+    getEmDashCollection.mockImplementation(async (collection: string, filter: { locale?: string }) => {
+      if (collection === 'events') {
+        return {
+          entries:
+            filter.locale === 'en'
+              ? [row('golf', 'en', 'g1', { title: 'Golf', start_date: '2026-06-01', location: 'W', sponsors: ['s1'] })]
+              : [],
+        }
+      }
+      if (collection === 'sponsors' && filter.locale === 'es') {
+        return { entries: [row('acme-es', 'es', 'sg1', { name: 'Acme (ES)' })] }
+      }
+      return { entries: [] }
+    })
+    getEmDashEntry.mockResolvedValue({ entry: row('acme', 'en', 'sg1', { name: 'Acme' }) })
+
+    const [event] = await getEvents('es')
+
+    expect(event.sponsors).toEqual([{ name: 'Acme (ES)', logoUrl: undefined, website: undefined }])
+  })
+
+  it('finds a translated team profile by its English profile slug', async () => {
+    byLocale({
+      en: [row('jane-board', 'en', 't1', { name: 'Jane', role: 'Chair', tier: 'board', profile_slug: 'jane-doe' })],
+      es: [row('jane-board-es', 'es', 't1', { name: 'Jane', role: 'Presidenta', tier: 'board', profile_slug: 'jane-doe-es' })],
+    })
+
+    expect((await getTeamMemberBySlug('jane-doe', 'es'))?.role).toBe('Presidenta')
+    expect((await getTeamMemberBySlug('jane-doe-es', 'es'))?.role).toBe('Presidenta')
+    expect(await getTeamMemberBySlug('nobody', 'es')).toBeUndefined()
+  })
+
+  it('reports a detail entry\'s slug in every locale it exists in, from either locale', async () => {
+    byLocale({
+      en: [row('impact-report', 'en', 'r1', { title: 'Impact Report' }), row('only-en', 'en', 'r2', { title: 'Only EN' })],
+      es: [row('informe-de-impacto', 'es', 'r1', { title: 'Informe de impacto' })],
+    })
+
+    expect((await getResource('impact-report'))?.alternates).toEqual({ en: 'impact-report', es: 'informe-de-impacto' })
+    expect((await getResource('informe-de-impacto', 'es'))?.alternates).toEqual({
+      en: 'impact-report',
+      es: 'informe-de-impacto',
+    })
+    expect((await getResource('only-en', 'es'))?.alternates).toEqual({ en: 'only-en' })
+  })
+
+  it('reports a team member\'s profile slug per locale', async () => {
+    byLocale({
+      en: [row('jane-board', 'en', 't1', { name: 'Jane', role: 'Chair', tier: 'board', profile_slug: 'jane-doe' })],
+      es: [row('jane-board-es', 'es', 't1', { name: 'Jane', role: 'Presidenta', tier: 'board', profile_slug: 'jane-doe-es' })],
+    })
+
+    expect((await getTeamMemberBySlug('jane-doe'))?.alternates).toEqual({ en: 'jane-doe', es: 'jane-doe-es' })
+  })
+
+  it('asks EmDash for the menu in the requested locale', async () => {
+    getMenu.mockResolvedValue(null)
+    await getPrimaryMenu('es')
+    expect(getMenu).toHaveBeenCalledWith('primary', { locale: 'es' })
+  })
+})
