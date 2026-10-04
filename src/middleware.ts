@@ -5,6 +5,7 @@ import { localeFromPath, localizePath, stripLocale } from './lib/i18n'
 import { projectPathFor } from './lib/legacyRoutes.mjs'
 import { localizeLinks } from './lib/localizeLinks'
 import type { CopyManifest } from './lib/copy'
+import { guardEmDashApi } from './lib/emdashGuard'
 
 // Runs once per process, on the first request - covers `astro dev` and the
 // deployed `@astrojs/node` standalone server uniformly, since neither has a
@@ -47,6 +48,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       console.warn('[static-page-sync] EMDASH_SYNC_PAT not set, skipping sync')
     }
   }
+
+  // Non-admin CMS users (marketing): EmDash API writes go through the guard.
+  const guarded = await guardEmDashApi(context, next)
+  if (guarded) return guarded
 
   // Spanish pages are rendered from the shared (English-path) page modules,
   // which read their locale from Astro.originPathname; their internal links
