@@ -4,6 +4,9 @@ import { manifestSources, syncStaticPages } from './lib/staticPageSync'
 import { localeFromPath, localizePath, stripLocale, type Locale } from './lib/i18n'
 import { projectPathFor } from './lib/legacyRoutes.mjs'
 import { localizeLinks } from './lib/localizeLinks'
+import { openExternalLinks } from './lib/externalLinks'
+import { getPageCopy } from './lib/content'
+import globalCopy from './copy/_copy'
 import type { CopyManifest } from './lib/copy'
 import { guardEmDashApi } from './lib/emdashGuard'
 
@@ -69,9 +72,21 @@ export const onRequest = defineMiddleware(async (context, next) => {
   return withLocalizedLinks(await next(path + context.url.search), locale)
 })
 
+// The screen-reader cue for links that open in a new tab, in the page's
+// language; the default from code if the CMS can't be read.
+async function newTabCue(locale: Locale): Promise<string> {
+  try {
+    return (await getPageCopy(globalCopy, locale)).copy['a11y.newTab']
+  } catch {
+    return globalCopy.slots['a11y.newTab'].default
+  }
+}
+
 async function withLocalizedLinks(response: Response, locale: Locale): Promise<Response> {
   if (!response.headers.get('content-type')?.includes('text/html')) return response
-  const html = localizeLinks(await response.text(), locale)
+  // Same-site links follow the page language; links to other sites open in
+  // a new tab (src/lib/externalLinks.ts).
+  const html = openExternalLinks(localizeLinks(await response.text(), locale), await newTabCue(locale))
   const headers = new Headers(response.headers)
   headers.delete('content-length')
   return new Response(html, { status: response.status, statusText: response.statusText, headers })
