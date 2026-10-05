@@ -12,7 +12,7 @@ Marketing site for Victoria Venezuela Foundation — a nonprofit connecting US d
 
 ### Option 1: Dev container (recommended)
 
-Open the repo in a dev container-capable editor (VS Code, GitHub Codespaces) and reopen in container. It preinstalls Node 22, Playwright's system dependencies, and runs `npm install` for both the root project and `docs-site/` on create. Ports `4321` (site + EmDash admin) and `6006` (Storybook) are forwarded to the host automatically.
+Open the repo in a dev container-capable editor (VS Code, GitHub Codespaces) and reopen in container. It preinstalls Node 22, Playwright's system dependencies, and runs `npm ci` for both the root project and `docs-site/` on create. Ports `4321` (site + EmDash admin) and `6006` (Storybook) are forwarded to the host automatically.
 
 ```bash
 npm run dev

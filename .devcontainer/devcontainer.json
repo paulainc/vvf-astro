@@ -29,5 +29,8 @@
   },
 
   // New volumes are created owned by root: hand them to the node user first.
-  "postCreateCommand": "sudo chown node:node node_modules docs-site/node_modules && (curl -fsSL https://basecamp.com/install-cli | bash || true); npm install && npx playwright install --with-deps && cd docs-site && npm install"
+  // npm ci installs exactly the lockfiles without rewriting them (the
+  // container's npm differs from the host's, and `npm install` would churn
+  // package-lock.json).
+  "postCreateCommand": "sudo chown node:node node_modules docs-site/node_modules && (curl -fsSL https://basecamp.com/install-cli | bash || true); npm ci && npx playwright install --with-deps && cd docs-site && npm ci"
 }

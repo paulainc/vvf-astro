@@ -13,7 +13,7 @@ description: Install, run, and develop the VVF Astro site locally.
 
 ### Option 1: Dev container (recommended)
 
-Open the repo in a dev container-capable editor (VS Code, GitHub Codespaces) and reopen in container. It's pinned to Node 22, preinstalls Playwright's system dependencies, and runs `npm install` for both the root project and `docs-site/` on create — no manual install steps. Ports `4321` (site + EmDash admin) and `6006` (Storybook) are forwarded to the host automatically; `docs-site`'s own dev server also uses `4321`.
+Open the repo in a dev container-capable editor (VS Code, GitHub Codespaces) and reopen in container. It's pinned to Node 22, preinstalls Playwright's system dependencies, and runs `npm ci` for both the root project and `docs-site/` on create — no manual install steps. Ports `4321` (site + EmDash admin) and `6006` (Storybook) are forwarded to the host automatically; `docs-site`'s own dev server also uses `4321`.
 
 ```bash
 npm run dev
