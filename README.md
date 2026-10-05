@@ -33,6 +33,10 @@ The `pages` collection (hidden from the sidebar) lists every static route that i
 
 On first run, EmDash creates a local `data.db` and seeds it from [`seed/seed.json`](seed/seed.json) — the site's content schema (collections + fields) and starter content, both version-controlled. `data.db`, `.emdash/`, and `/uploads` are local/generated and gitignored; nothing about them needs to be committed.
 
+## Running in a container
+
+The site builds into one container image that runs on Postgres and any S3-compatible bucket, configured entirely at runtime. `docker compose up --build` runs that stack locally (site, Postgres and SeaweedFS, seeded with the public seed). `npm run data:export` / `data:import` move a whole site, database and media, between environments. See [Running Anywhere](docs-site/src/content/docs/running-anywhere.md).
+
 ## Basecamp CLI
 
 Requirements for this project are tracked as cards on the VVF project's "Tareas" board in Basecamp, worked through as openspec changes. To connect:

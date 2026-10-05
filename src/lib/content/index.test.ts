@@ -184,7 +184,7 @@ describe('getChildren', () => {
 
     expect(getEmDashCollection).toHaveBeenCalledWith(
       'children',
-      expect.objectContaining({ where: { published: true } })
+      expect.objectContaining({ where: { published: 1 } })
     )
     expect(child).toEqual({
       slug: 'maria',
@@ -309,7 +309,7 @@ describe('getSponsors / getSponsorshipPackages', () => {
     await getPartners()
     expect(getEmDashCollection).toHaveBeenCalledWith(
       'sponsors',
-      expect.objectContaining({ where: { partner: true }, orderBy: { order: 'asc' } })
+      expect.objectContaining({ where: { partner: 1 }, orderBy: { order: 'asc' } })
     )
   })
 

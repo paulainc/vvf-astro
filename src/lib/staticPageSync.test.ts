@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { manifestSources, scanStaticPageRoutes, syncStaticPages } from './staticPageSync'
+import { listPageFiles, manifestSources, pageFilesFromGlob, scanStaticPageRoutes, staticRoutesFrom, syncStaticPages } from './staticPageSync'
 import { EmDashApiError } from 'emdash/client'
 import { defineCopy, GLOBAL_ROUTE } from './copy'
 
@@ -103,7 +103,7 @@ function fakeEmDash({ missing = [] as string[] } = {}) {
   return { client: client as never, items, calls }
 }
 
-const pagesDir = PAGES_DIR
+const pageFiles = listPageFiles(PAGES_DIR)
 
 function copyFor(route: string, maxLength = 80) {
   return {
@@ -116,7 +116,7 @@ function copyFor(route: string, maxLength = 80) {
 }
 
 describe('syncStaticPages', () => {
-  const opts = { baseUrl: 'http://x', token: 't', pagesDir }
+  const opts = { baseUrl: 'http://x', token: 't', pageFiles }
 
   it('creates one pages row per route per locale, linking translations', async () => {
     const db = fakeEmDash()
@@ -280,7 +280,7 @@ describe('syncStaticPages', () => {
 })
 
 describe('syncStaticPages: overlapping runs', () => {
-  const opts = { baseUrl: 'http://x', token: 't', pagesDir }
+  const opts = { baseUrl: 'http://x', token: 't', pageFiles }
 
   it('heals duplicate slots, keeping the oldest row and its translation', async () => {
     const db = fakeEmDash()
@@ -310,6 +310,21 @@ describe('syncStaticPages: overlapping runs', () => {
   })
 })
 
+describe('page files without the source tree', () => {
+  it('gets the same routes from build-time glob keys as from the disk', () => {
+    const keys = listPageFiles(PAGES_DIR).map((f) => `/${f}`)
+    expect(pageFilesFromGlob(keys)).toEqual(listPageFiles(PAGES_DIR))
+    expect(staticRoutesFrom(pageFilesFromGlob(keys))).toEqual(scanStaticPageRoutes(PAGES_DIR))
+  })
+
+  it('maps manifests to pages from the list alone (no file system)', () => {
+    const files = ['src/pages/a/index.astro', 'src/pages/b/[slug].astro', 'src/pages/c/[category].astro']
+    const m = (route: string) => ({ default: defineCopy(route, { x: { label: 'X', default: 'x' } }) })
+    const sources = manifestSources({ '/src/pages/a/_copy.ts': m('/a'), '/src/pages/b/_copy.detail.ts': m('/b/*'), '/src/pages/c/_copy.ts': m('/c'), '/src/copy/_copy.ts': m('_global') }, files)
+    expect(sources.map((x) => x.sourceFile)).toEqual(['src/pages/a/index.astro', 'src/pages/b/[slug].astro', 'src/pages/c/[category].astro', 'src/copy/_copy.ts'])
+  })
+})
+
 describe('manifestSources', () => {
   it('maps each manifest module to the page next to it', () => {
     const manifest = defineCopy('/contact', { 'hero.heading': { label: 'Heading', default: 'Contact' } })
@@ -320,7 +335,7 @@ describe('manifestSources', () => {
         '/src/pages/resources/category/_copy.ts': { default: [cat('/resources/category/stories'), cat('/resources/category/financials-transparency')] },
         '/src/pages/events/_copy.detail.ts': { default: cat('/events/*') },
       },
-      process.cwd()
+      listPageFiles(PAGES_DIR)
     )
     expect(sources.map((s) => [s.manifest.route, s.sourceFile])).toEqual([
       ['/contact', 'src/pages/contact/index.astro'],
