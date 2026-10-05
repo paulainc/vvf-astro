@@ -45,3 +45,13 @@
 
 - [x] 9.1 Add a "Running anywhere" page to docs-site (image, variables, local stack, seeding, export/import, safeguarding note on exports) and add it to the sidebar. Update the README and `.env.example`. Verify the docs build.
 - [x] 9.2 Run the unit tests, Storybook tests, the e2e suite on SQLite and on the container (Postgres + MinIO), and the menu check, then report the results.
+
+## 10. Dev container (added at the user's request)
+
+- [x] 10.1 Name the dev container ("VVF dev container"; Docker name `vvf-dev-container`), give it its own `node_modules` volumes (root and `docs-site/`) and Docker access through the docker-outside-of-docker feature (`moby: false`, since the Node 22 image is Debian 13). Verified with the Dev Containers CLI:
+  - the container's `node_modules` starts empty and gets Linux-only builds, while the host's stays untouched;
+  - Docker 29.8 and Compose v5.6 work inside and see the host's containers;
+  - `docker compose config` reads the stack.
+
+  A full `astro build` inside was killed for memory (Docker Desktop has 7.7 GB, shared with other running containers), which is documented.
+
