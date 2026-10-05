@@ -10,6 +10,7 @@
 // implement fallback themselves.
 import { getEmDashCollection, getEmDashEntry, getMenu, type MenuItem } from 'emdash'
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '../i18n'
+import { copyCollectionFor } from '../cmsNavigation.mjs'
 import { resolveCopy, type CopyManifest, type ResolvedCopy, type SlotSpec, type StoredSlot } from '../copy'
 import type {
   EventItem,
@@ -551,8 +552,20 @@ export async function getCampaignSettings(locale: Locale = DEFAULT_LOCALE): Prom
 
 // --- Page copy -----------------------------------------------------------
 
+// A page's slots live in its own copy collection (src/lib/cmsNavigation.mjs);
+// until that collection exists (schema not applied yet) the page renders its
+// defaults.
+const warnedCopyCollections = new Set<string>()
+
 async function storedSlots(route: string, locale: Locale): Promise<Map<string, StoredSlot>> {
-  const rows = await queryLocale('page_copy', { where: { route_path: route }, limit: 500 }, locale)
+  const collection = copyCollectionFor(route)
+  const rows = await queryLocale(collection, { limit: 500 }, locale).catch((error: unknown) => {
+    if (!warnedCopyCollections.has(collection)) {
+      warnedCopyCollections.add(collection)
+      console.warn(`[page-copy] ${collection} unavailable, rendering defaults (run npm run cms:schema):`, error)
+    }
+    return [] as RawEntry[]
+  })
   return new Map(
     rows.map((r) => [
       String(r.data.key),
