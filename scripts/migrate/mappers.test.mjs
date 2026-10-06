@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mapChildren, mapCorporateTiers, mapEvents, mapPageFaqs, mapResources, mapTeam, mergePartners, parseLiveDate, slugify } from './mappers.mjs'
-import { buildSeeds, createContext, pageCopyEntries, translatedEntries } from './transform.mjs'
+import { alignSponsorNames, buildSeeds, createContext, pageCopyEntries, translatedEntries } from './transform.mjs'
 import { sanitizeRichText, toPlainText, toPortableText } from './lib/richtext.mjs'
 
 const CDN = 'https://cdn.prod.website-files.com/site'
@@ -312,3 +312,14 @@ describe('pageCopyEntries', () => {
     ])
   })
 })
+
+// Review finding (PR #15): the Spanish golf events pointed at
+// `sponsor-el-manitas-de-confianza`, a translated company name.
+describe('alignSponsorNames', () => {
+  it('keeps the English name for a Spanish sponsor with the same logo', () => {
+    const en = [{ sponsors: [{ name: 'The Trusty Handyman', logo: { src: 'https://cdn/x/handyman.png' } }] }]
+    const es = [{ sponsors: [{ name: 'El manitas de confianza', logo: { src: 'https://cdn/x/handyman.png' } }, { name: 'Nuevo', logo: { src: 'https://cdn/x/new.png' } }] }]
+    expect(alignSponsorNames(en, es)[0].sponsors.map((s) => s.name)).toEqual(['The Trusty Handyman', 'Nuevo'])
+  })
+})
+
