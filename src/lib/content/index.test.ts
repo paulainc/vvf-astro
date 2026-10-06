@@ -46,6 +46,9 @@ beforeEach(() => {
 describe('getEvents', () => {
   it('maps snake_case fields to camelCase and resolves image/refs', async () => {
     getEmDashCollection.mockImplementation(async (collection: string) => {
+      if (collection === 'sponsorship_packages') {
+        return { entries: [{ id: 'sp-1', slug: 'gold', data: { tier_name: 'Gold', price: '$5,000', order: 1 } }] }
+      }
       if (collection === 'events') {
         return {
           entries: [
@@ -65,12 +68,6 @@ describe('getEvents', () => {
         }
       }
       return { entries: [] }
-    })
-    getEmDashEntry.mockImplementation(async (collection: string, id: string) => {
-      if (collection === 'sponsorship_packages' && id === 'sp-1') {
-        return { entry: { data: { tier_name: 'Gold', price: '$5,000', order: 1 } } }
-      }
-      return { entry: undefined }
     })
 
     const [event] = await getEvents()
@@ -468,12 +465,16 @@ describe('locale resolution', () => {
               : [],
         }
       }
-      if (collection === 'sponsors' && filter.locale === 'es') {
-        return { entries: [row('acme-es', 'es', 'sg1', { name: 'Acme (ES)' })] }
+      if (collection === 'sponsors') {
+        return {
+          entries:
+            filter.locale === 'es'
+              ? [row('acme-es', 'es', 'sg1', { name: 'Acme (ES)' })]
+              : [{ id: 's1', ...row('acme', 'en', 'sg1', { name: 'Acme' }) }],
+        }
       }
       return { entries: [] }
     })
-    getEmDashEntry.mockResolvedValue({ entry: row('acme', 'en', 'sg1', { name: 'Acme' }) })
 
     const [event] = await getEvents('es')
 
@@ -552,3 +553,22 @@ describe('getPageCopy', () => {
     expect(locales).toEqual(['en'])
   })
 })
+
+// Review finding (PR #13): each reference was fetched with its own query.
+describe('reference resolution', () => {
+  it('reads each referenced collection once, however many references', async () => {
+    getEmDashCollection.mockImplementation(async (collection: string) => {
+      if (collection === 'events') {
+        return { entries: [entry('a', { title: 'A', start_date: '2026-01-01', sponsors: ['s1', 's2'] }), entry('b', { title: 'B', start_date: '2026-02-01', sponsors: ['s2'] })] }
+      }
+      if (collection === 'sponsors') {
+        return { entries: [{ id: 's1', slug: 'one', data: { name: 'One' } }, { id: 's2', slug: 'two', data: { name: 'Two' } }] }
+      }
+      return { entries: [] }
+    })
+    const events = await getEvents()
+    expect(events.map((e) => e.sponsors?.map((s) => s.name))).toEqual([['One', 'Two'], ['Two']])
+    expect(getEmDashEntry).not.toHaveBeenCalled()
+  })
+})
+
