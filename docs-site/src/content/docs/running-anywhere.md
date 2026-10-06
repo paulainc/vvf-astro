@@ -53,7 +53,7 @@ Compose runs the site image, Postgres 16 and SeaweedFS (an S3-compatible store; 
 ## A new environment
 
 1. Create an empty Postgres database and a bucket.
-2. Migrate and seed: `npm run db:setup` (migrations, then the public seed, only into an empty database; `--no-seed` stops after migrations).
+2. Migrate and seed: `npm run db:setup` (it prints the target database first; `--force` asks before re-applying the seed) (migrations, then the public seed, only into an empty database; `--no-seed` stops after migrations).
 3. Run the image with the settings above. Wait for `/readyz`, then send traffic.
 
 Migrations are a deploy step. `npm run db:setup`, or `npx emdash migrate --from-config --expected-target-fingerprint=<fp>` from the tools image, applies pending EmDash migrations before the new version takes traffic.
@@ -67,10 +67,10 @@ npm run data:import -- <archive>    # into an empty, migrated database
 
 The archive holds every database table (content, users, API tokens, revisions, drafts, menus, settings) and every media file. It works between any pair of modes, for example from a local SQLite + disk site to Postgres + S3. Source and target are chosen the same way as for the site (`DB_ADAPTER`, `STORAGE`; `--sqlite <file>` and `--uploads <dir>` for local paths).
 
-The import runs in one transaction: if it fails, the target stays empty and can be retried. It never writes over an existing site. Retired collections (renamed for Postgres) aren't carried over, because their content already moved.
+The import runs in one transaction: if it fails, the target stays empty and can be retried. It never writes over an existing site: any row outside what migrations create (users, media, content...) makes it refuse. Retired collections (renamed for Postgres) aren't carried over, because their content already moved.
 
 :::caution[Safeguarding]
-Exports contain children's data and account data. They're written outside the repository by default, and the script refuses a path inside it. Store and delete them as safeguarding data, and never use them to fill preview environments: previews seed the public `seed/seed.json`.
+Exports contain children's data and account data. They're written outside the repository by default (the script refuses a path inside it), readable only by you (file `0600`, a new folder `0700`), and never over an existing file. Store and delete them as safeguarding data, and never use them to fill preview environments: previews seed the public `seed/seed.json`.
 :::
 
 To copy only media from disk to a bucket, use `npm run media:copy`. It keeps the same keys, so content doesn't change, and it's safe to re-run.

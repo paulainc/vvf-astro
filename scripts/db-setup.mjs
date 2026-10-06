@@ -12,9 +12,20 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Kysely, sql } from 'kysely'
 import { applySeed } from 'emdash/seed'
-import { createDialect } from '../src/lib/db/postgresRuntime.mjs'
+import { createDialect, databaseUrl } from '../src/lib/db/postgresRuntime.mjs'
+import { confirmDestructive } from './lib/confirm.mjs'
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
+
+// Where setup is about to write, without credentials: "host:port/database".
+export function describeTarget(url) {
+  try {
+    const u = new URL(url)
+    return `${u.hostname}${u.port ? `:${u.port}` : ''}${u.pathname}`
+  } catch {
+    return '(unparseable DATABASE_URL)'
+  }
+}
 
 export const shouldSeed = (collectionCount, force = false) => force || collectionCount === 0
 
@@ -32,7 +43,15 @@ function emdashMigrate() {
   return out.match(/Executed: (.*)/)?.[1]?.trim() ?? ''
 }
 
-export async function setupDatabase({ seedFile = path.join(ROOT, 'seed/seed.json'), force = false, seed = true, log = console.log } = {}) {
+export async function setupDatabase({ seedFile = path.join(ROOT, 'seed/seed.json'), force = false, seed = true, confirm = false, log = console.log } = {}) {
+  const target = describeTarget(databaseUrl())
+  log(`Target: Postgres ${target}`)
+  // `npm run seed` in Postgres mode and `--force` (re-applying the seed to a
+  // database that has content) ask first; plain `db:setup` only ever seeds
+  // an empty database and runs unattended in CI and the tools image.
+  if ((confirm || force) && !(await confirmDestructive(`This migrates${seed ? ' and seeds' : ''} the Postgres database at ${target}${force ? ', re-applying the seed over existing content (--force)' : ''}.`))) {
+    process.exit(1)
+  }
   const executed = emdashMigrate()
   log(`Migrations: ${executed && executed !== 'none' ? executed.split(',').length + ' applied' : 'up to date'}`)
   if (!seed) return { seeded: false } // --no-seed: an empty, migrated database (e.g. for npm run data:import)

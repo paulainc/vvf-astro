@@ -17,7 +17,7 @@
 // them as safeguarding data. Imports go into an empty, migrated database
 // (npm run db:setup -- --no-seed), never over an existing site.
 import { spawnSync } from 'node:child_process'
-import { createWriteStream, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { closeSync, createWriteStream, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
@@ -36,6 +36,16 @@ export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const FORMAT_VERSION = 1
 // Migration bookkeeping belongs to each database; sessions are per environment.
 export const SKIP_TABLES = new Set(['_emdash_migrations', '_emdash_migrations_lock', 'astro_sessions'])
+
+// Tables EmDash's migrations fill in a new database; every other table must
+// be empty before an import (a target with users, media or content is a site).
+export const MIGRATION_ROWS = new Set(['options', '_emdash_taxonomy_defs', '_emdash_media_usage_cleanup', '_emdash_media_usage_activation'])
+
+export function tablesBlockingImport(rowCounts) {
+  return Object.entries(rowCounts)
+    .filter(([table, n]) => n > 0 && !SKIP_TABLES.has(table) && !MIGRATION_ROWS.has(table))
+    .map(([table]) => table)
+}
 
 // --- pure helpers (unit-tested) ---------------------------------------------
 
@@ -232,8 +242,17 @@ export async function exportData({ source = describeEndpoint(), out = defaultExp
     }
     const manifest = { format: FORMAT_VERSION, createdAt: new Date().toISOString(), source: { db: source.db.kind, storage: source.storage.kind }, tables: counts, media: keys.length }
     writeFileSync(path.join(work, 'manifest.json'), JSON.stringify(manifest, null, 2))
-    mkdirSync(path.dirname(path.resolve(out)), { recursive: true })
-    const tar = spawnSync('tar', ['-czf', path.resolve(out), '-C', work, '.'], { encoding: 'utf8' })
+    // Readable only by its owner: the archive holds child and account data.
+    // The folder is created 0700 when it doesn't exist yet, and the file is
+    // created 0600 (never over an existing file) before tar writes into it.
+    mkdirSync(path.dirname(path.resolve(out)), { recursive: true, mode: 0o700 })
+    const fd = openSync(path.resolve(out), 'wx', 0o600)
+    let tar
+    try {
+      tar = spawnSync('tar', ['-czf', '-', '-C', work, '.'], { stdio: ['ignore', fd, 'pipe'], encoding: 'utf8' })
+    } finally {
+      closeSync(fd)
+    }
     if (tar.status !== 0) throw new Error(`tar failed: ${tar.stderr}`)
     log(`Exported ${label(source)}: ${tables.length} tables, ${Object.values(counts).reduce((a, b) => a + b, 0)} rows, ${keys.length} media files -> ${out}`)
     return { out, manifest }
@@ -257,8 +276,12 @@ export async function importData({ archive, target = describeEndpoint(), log = c
   try {
     const tables = await listTables(db, target.db.kind)
     if (!tables.includes('_emdash_collections')) throw new Error('The target database has no EmDash schema yet: run migrations first (npm run db:setup -- --no-seed).')
-    const existing = (await db.selectFrom('_emdash_collections').select(sql`count(*)`.as('n')).executeTakeFirst()).n
-    if (Number(existing) > 0) throw new Error('The target database already has a site. Import only into an empty, migrated database.')
+    const targetRows = {}
+    for (const t of tables) targetRows[t] = Number((await db.selectFrom(t).select(sql`count(*)`.as('n')).executeTakeFirst()).n)
+    const blocking = tablesBlockingImport(targetRows)
+    if (blocking.length) {
+      throw new Error(`The target database isn't empty (rows in ${blocking.join(', ')}). Import only into an empty, migrated database (npm run db:setup -- --no-seed).`)
+    }
 
     const archiveRows = (t) => readJsonl(path.join(work, 'db', `${t}.jsonl`)).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, decodeValue(v)])))
     // All or nothing: a failed import leaves the target empty, ready to retry.
