@@ -17,7 +17,9 @@
 //  5. Translations can only be created as drafts (a person publishes them).
 //     Refused rather than rewritten: Astro passes the endpoint the original
 //     request body even after middleware forwards a modified one.
-//  6. Anything the guard doesn't know is refused (deny by default).
+//  6. Anything the guard doesn't know is refused (deny by default): unknown
+//     MCP tools, and REST areas that are neither mapped onto a tool nor in
+//     PASS_THROUGH (see restOperation).
 //
 // Operations are normalized to MCP tool names; REST requests are mapped onto
 // the same names (restOperation) so one policy covers both.
@@ -64,7 +66,9 @@ const READ_TOOLS = new Set([
   'content_list_trashed',
   'content_translations',
   'revision_list',
+  'revision_get',
   'search',
+  'dashboard',
   'media_list',
   'media_get',
   'menu_list',
@@ -118,8 +122,10 @@ export async function checkOperation(op: Operation, ctx: GuardContext): Promise<
     }
     // content_list / search results are filtered by filterChildData.
   }
-  if (tool === 'revision_restore' && !ctx.safeguarding) {
-    if ((await ctx.revisionCollection(String(args.revisionId))) === CHILDREN) return deny(CHILD_LOCK)
+  if ((tool === 'revision_restore' || tool === 'revision_get') && !ctx.safeguarding) {
+    if ((await ctx.revisionCollection(String(args.revisionId))) === CHILDREN) {
+      return tool === 'revision_get' ? deny('Not found', 404) : deny(CHILD_LOCK)
+    }
   }
 
   // 3. pages inventory
@@ -237,18 +243,44 @@ function flatten(items: Record<string, any>[]): Record<string, any>[] {
   return items.flatMap((i) => [i, ...flatten(i.children ?? [])])
 }
 
-// Maps an admin REST request onto the equivalent MCP operation, or undefined
-// for endpoints the guard leaves to EmDash's own role checks.
+// API areas a restricted user may reach without a mapped operation. EmDash's
+// own permissions still apply, and none of them returns content items.
+export const PASS_THROUGH = new Set([
+  'auth',
+  'oauth',
+  'manifest',
+  'media',
+  'taxonomies',
+  'settings',
+  'sections',
+  'widget-areas',
+  'widget-components',
+  'redirects',
+  'themes',
+  'admin',
+])
+
+// One spelling per route: Astro serves `/x/`, `/x` and `//x` alike, so the
+// guard compares paths without empty segments or a trailing slash.
+export function normalizeApiPath(pathname: string): string {
+  return pathname.replace(/\/{2,}/g, '/').replace(/(.)\/$/, '$1')
+}
+
+// Maps an admin REST request onto the equivalent MCP operation; undefined for
+// the PASS_THROUGH areas, and an unknown tool (refused) for anything else.
+// Values from the URL always win over the request body, so a body can't
+// retarget an operation at another collection or item.
 export function restOperation(method: string, pathname: string, body: Record<string, any> | undefined, search: URLSearchParams): Operation | undefined {
-  const parts = pathname.replace(/^\/_emdash\/api\//, '').split('/').filter(Boolean).map(decodeURIComponent)
+  const parts = normalizeApiPath(pathname).replace(/^\/_emdash\/api\/?/, '').split('/').filter(Boolean).map(decodeURIComponent)
   const locale = search.get('locale') ?? undefined
   if (parts[0] === 'content' && parts[1]) {
     const [, collection, id, action] = parts
+    const target = { ...body, collection, id, locale: locale ?? body?.locale }
     if (id === 'trash') return { tool: 'content_list_trashed', args: { collection } }
-    if (!id) return method === 'GET' ? { tool: 'content_list', args: { collection, locale } } : { tool: 'content_create', args: { collection, ...body } }
+    if (!id) return method === 'GET' ? { tool: 'content_list', args: { collection, locale } } : { tool: 'content_create', args: { ...body, collection } }
     if (!action) {
       if (method === 'GET') return { tool: 'content_get', args: { collection, id, locale } }
-      if (method === 'PUT' || method === 'PATCH') return { tool: 'content_update', args: { collection, id, locale, ...body } }
+      if (method === 'PUT' || method === 'PATCH') return { tool: 'content_update', args: target }
       if (method === 'DELETE') return { tool: 'content_delete', args: { collection, id } }
     }
     const actions: Record<string, string> = {
@@ -268,18 +300,24 @@ export function restOperation(method: string, pathname: string, body: Record<str
       references: 'content_get',
     }
     const tool = action ? actions[action] : undefined
-    return { tool: tool ?? `content_${action}`, args: { collection, id, locale, ...body } }
+    return { tool: tool ?? `content_${action}`, args: target }
   }
-  if (parts[0] === 'revisions' && parts[2] === 'restore') return { tool: 'revision_restore', args: { revisionId: parts[1] } }
+  if (parts[0] === 'revisions' && parts[1]) {
+    if (parts[2] === 'restore') return { tool: 'revision_restore', args: { revisionId: parts[1] } }
+    if (!parts[2] && method === 'GET') return { tool: 'revision_get', args: { revisionId: parts[1] } }
+  }
+  if (parts[0] === 'search' && method === 'GET') return { tool: 'search', args: {} }
+  if (parts[0] === 'dashboard' && method === 'GET') return { tool: 'dashboard', args: {} }
   if (parts[0] === 'menus') {
     if (method === 'GET') return { tool: 'menu_get', args: { name: parts[1] } }
     const [, name, sub] = parts
     const menuLocale = locale ?? body?.locale ?? 'en'
     if (sub === 'items' || sub === 'reorder') return { tool: 'menu_set_items', args: { name, locale: menuLocale, items: body ? [body] : [] } }
     if (!name || sub === 'translations') return { tool: method === 'POST' ? 'menu_create' : 'menu_delete', args: { name } }
-    return { tool: method === 'DELETE' ? 'menu_delete' : 'menu_update', args: { name, locale: menuLocale, ...body } }
+    return { tool: method === 'DELETE' ? 'menu_delete' : 'menu_update', args: { ...body, name, locale: menuLocale } }
   }
-  return undefined
+  if (parts[0] && PASS_THROUGH.has(parts[0])) return undefined
+  return { tool: `rest_${parts.slice(0, 2).join('_') || 'root'}`, args: {} }
 }
 
 // Child data as a non-safeguarding user may see it: published profiles only,
