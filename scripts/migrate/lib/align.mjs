@@ -3,12 +3,24 @@
 // locale, so walking both pages in document order and pairing nodes that sit
 // at the same element path yields aligned translations — text nodes plus the
 // alt / aria-label / placeholder / title attributes and the SEO head tags.
+// Link text is paired by link target and element path first (/x ↔ /es/x in
+// the same place): menus can differ in order or structure between the
+// locales (or between cached copies), which would otherwise shift every
+// positional pair after the difference.
 import { load } from 'cheerio'
 
 const ATTRS = ['alt', 'aria-label', 'placeholder', 'title']
 const SKIP = 'script, style, noscript, svg'
 
 const norm = (s) => (s ?? '').replace(/\s+/g, ' ').trim()
+
+// A link's target without origin, locale prefix or trailing slash, so the
+// English and Spanish links to the same page compare equal.
+export function linkKey(href) {
+  if (!href || href.startsWith('#') || /^(mailto|tel|javascript):/i.test(href)) return undefined
+  const path = href.replace(/^https?:\/\/[^/]+/i, '').split(/[?#]/)[0]
+  return (path.replace(/^\/es(?=\/|$)/, '').replace(/\/$/, '') || '/')
+}
 
 // Every translatable string on the page, in document order, with the element
 // path it sits on (e.g. "div.hero > h1#text").
@@ -21,11 +33,11 @@ export function pageStrings(html) {
   const description = norm($('meta[name="description"]').attr('content'))
   if (description) out.push({ path: 'head>meta.description', text: description })
 
-  const walk = (el, path) => {
+  const walk = (el, path, href) => {
     for (const node of $(el).contents().toArray()) {
       if (node.type === 'text') {
         const text = norm(node.data)
-        if (/[A-Za-zÁÉÍÓÚáéíóúñÑ]/.test(text)) out.push({ path: `${path}#text`, text })
+        if (/[A-Za-zÁÉÍÓÚáéíóúñÑ]/.test(text)) out.push({ path: `${path}#text`, text, ...(href ? { href } : {}) })
       } else if (node.type === 'tag') {
         const cls = ($(node).attr('class') ?? '').split(/\s+/).filter(Boolean)[0]
         const p = `${path}>${node.name}${cls ? `.${cls}` : ''}`
@@ -33,7 +45,7 @@ export function pageStrings(html) {
           const v = norm($(node).attr(a))
           if (v && /[A-Za-z]/.test(v)) out.push({ path: `${p}@${a}`, text: v })
         }
-        walk(node, p)
+        walk(node, p, node.name === 'a' ? linkKey($(node).attr('href')) : href)
       }
     }
   }
@@ -44,8 +56,39 @@ export function pageStrings(html) {
 // Longest-common-subsequence alignment on element paths; returns
 // Map<englishText, spanishText> for pairs whose text actually differs.
 export function alignPages(enHtml, esHtml) {
-  const en = pageStrings(enHtml)
-  const es = pageStrings(esHtml)
+  const table = new Map()
+  const add = (a, b) => {
+    if (a.text !== b.text && !table.has(a.text)) table.set(a.text, b.text)
+  }
+  // 1. Link text, by target + element path, in order of appearance.
+  const allEn = pageStrings(enHtml)
+  const allEs = pageStrings(esHtml)
+  const byLink = (list) => {
+    const m = new Map()
+    for (const s of list) {
+      if (!s.href) continue
+      const key = `${s.href} ${s.path}`
+      ;(m.get(key) ?? m.set(key, []).get(key)).push(s)
+    }
+    return m
+  }
+  const esLinks = byLink(allEs)
+  const paired = new Set()
+  for (const [key, enTexts] of byLink(allEn)) {
+    const esTexts = esLinks.get(key) ?? []
+    // Same number of text nodes for the link: pair them in order.
+    if (esTexts.length !== enTexts.length) continue
+    enTexts.forEach((s, i) => {
+      add(s, esTexts[i])
+      paired.add(s).add(esTexts[i])
+    })
+  }
+  // 2. Everything else, by element path. Menu dropdown headings aren't
+  //    links and the menus differ between locales, so they stay out (the
+  //    menus themselves are maintained in the CMS).
+  const positional = (s) => !paired.has(s) && !s.path.includes('dropdown-toggle')
+  const en = allEn.filter(positional)
+  const es = allEs.filter(positional)
   const n = en.length
   const m = es.length
   const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1))
@@ -54,10 +97,9 @@ export function alignPages(enHtml, esHtml) {
       dp[i][j] = en[i].path === es[j].path ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1])
     }
   }
-  const table = new Map()
   for (let i = 0, j = 0; i < n && j < m; ) {
     if (en[i].path === es[j].path) {
-      if (en[i].text !== es[j].text && !table.has(en[i].text)) table.set(en[i].text, es[j].text)
+      add(en[i], es[j])
       i++
       j++
     } else if (dp[i + 1][j] >= dp[i][j + 1]) i++
