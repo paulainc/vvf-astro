@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // `npm run seed`: rebuild the local EmDash database from scratch, with media.
 //
-// 1. Remove data.db* and uploads/.
+// 1. Remove data.db* and uploads/ (after confirming, see scripts/lib/confirm.mjs).
 // 2. Regenerate seed/seed.json from the snapshot and apply it (EmDash 0.38
 //    also applies its content despite --no-content; step 4 overwrites it).
 // 3. Start a dev server on a spare port and upload every harvested media
@@ -15,6 +15,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { dev } from 'astro'
+import { confirmDestructive } from './lib/confirm.mjs'
 import { importMedia } from './migrate/media.mjs'
 import { transform } from './migrate/transform.mjs'
 import { LOCAL_SEED_PATH, ROOT_DIR, SEED_PATH } from './migrate/lib/paths.mjs'
@@ -31,6 +32,11 @@ const PORT = Number(process.env.SEED_PORT ?? 4398)
 
 function emdash(...args) {
   execFileSync('npx', ['emdash', ...args], { cwd: ROOT_DIR, stdio: 'inherit' })
+}
+
+if (existsSync(path.join(ROOT_DIR, 'data.db'))) {
+  const ok = await confirmDestructive('npm run seed deletes the local database (data.db, with its users and API tokens) and uploads/, then rebuilds them.')
+  if (!ok) process.exit(1)
 }
 
 for (const file of ['data.db', 'data.db-shm', 'data.db-wal']) rmSync(path.join(ROOT_DIR, file), { force: true })
