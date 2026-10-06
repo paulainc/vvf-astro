@@ -20,15 +20,29 @@ import { applySeed } from 'emdash/seed'
 import { createStorage as createLocalStorage } from 'emdash/storage/local'
 import { createStorage as createS3Storage } from 'emdash/storage/s3'
 import { readManifests, seedMedia } from './lib/seed-media.mjs'
-import { createDialect } from '../src/lib/db/postgresRuntime.mjs'
+import { createDialect, databaseUrl } from '../src/lib/db/postgresRuntime.mjs'
+import { confirmDestructive } from './lib/confirm.mjs'
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 
-// The same choice as the site's (astro.config.mjs).
+// The same choice as the site's (astro.config.mjs), except that it must be
+// explicit: a Postgres environment set up without STORAGE=s3 would put the
+// media on the machine running setup, where the deployed site can't see it
+// (review finding on PR #26). STORAGE=local is the deliberate disk option.
 export function openStorage(env = process.env) {
-  return env.STORAGE === 's3'
-    ? createS3Storage({})
-    : createLocalStorage({ directory: path.join(ROOT, 'uploads'), baseUrl: '/_emdash/api/media/file' })
+  if (env.STORAGE === 's3') return createS3Storage({})
+  if (env.STORAGE === 'local') return createLocalStorage({ directory: path.join(ROOT, 'uploads'), baseUrl: '/_emdash/api/media/file' })
+  throw new Error('Set STORAGE=s3 (with the S3_* settings) so the seed media goes to the bucket the site reads, or STORAGE=local to upload to ./uploads.')
+}
+
+// Where setup is about to write, without credentials: "host:port/database".
+export function describeTarget(url) {
+  try {
+    const u = new URL(url)
+    return `${u.hostname}${u.port ? `:${u.port}` : ''}${u.pathname}`
+  } catch {
+    return '(unparseable DATABASE_URL)'
+  }
 }
 
 export const shouldSeed = (collectionCount, force = false) => force || collectionCount === 0
@@ -47,7 +61,17 @@ function emdashMigrate() {
   return out.match(/Executed: (.*)/)?.[1]?.trim() ?? ''
 }
 
-export async function setupDatabase({ seedFile = path.join(ROOT, 'seed/seed.json'), force = false, seed = true, storage, log = console.log } = {}) {
+export async function setupDatabase({ seedFile = path.join(ROOT, 'seed/seed.json'), force = false, seed = true, confirm = false, storage, log = console.log } = {}) {
+  const target = describeTarget(databaseUrl())
+  log(`Target: Postgres ${target}`)
+  // Before anything is written: where the seed media will go.
+  const mediaStorage = seed ? (storage ?? openStorage()) : undefined
+  // `npm run seed` in Postgres mode and `--force` (re-applying the seed to a
+  // database that has content) ask first; plain `db:setup` only ever seeds
+  // an empty database and runs unattended in CI and the tools image.
+  if ((confirm || force) && !(await confirmDestructive(`This migrates${seed ? ' and seeds' : ''} the Postgres database at ${target}${force ? ', re-applying the seed over existing content (--force)' : ''}.`))) {
+    process.exit(1)
+  }
   const executed = emdashMigrate()
   log(`Migrations: ${executed && executed !== 'none' ? executed.split(',').length + ' applied' : 'up to date'}`)
   if (!seed) return { seeded: false } // --no-seed: an empty, migrated database (e.g. for npm run data:import)
@@ -58,7 +82,7 @@ export async function setupDatabase({ seedFile = path.join(ROOT, 'seed/seed.json
       log(`Seed skipped: the database already has ${rows[0].n} collections (use --force to re-apply).`)
       return { seeded: false }
     }
-    const media = await seedMedia({ db, storage: storage ?? openStorage(), manifest: readManifests({ children: false }).public, force })
+    const media = await seedMedia({ db, storage: mediaStorage, manifest: readManifests({ children: false }).public, force })
     log(`Media: ${media.uploaded} uploaded, ${media.skipped} already present.`)
     const result = await applySeed(db, JSON.parse(readFileSync(seedFile, 'utf8')), { includeContent: true })
     log(`Seeded ${path.relative(ROOT, seedFile)}: ${result.collections.created} collections, ${result.content.created} entries, ${result.menus.created} menus.`)

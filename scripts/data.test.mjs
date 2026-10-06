@@ -73,3 +73,13 @@ describe('collectionsToImport', () => {
     expect(collectionsToImport([{ id: '3', slug: 'copy_a_very_long_collection_name_indeed_x' }], 'sqlite').kept).toHaveLength(1)
   })
 })
+
+// Review finding (PR #25): the import only checked for collections before
+// replacing the target's tables.
+describe('tablesBlockingImport', () => {
+  it('allows only what migrations write', async () => {
+    const { tablesBlockingImport } = await import('./data.mjs')
+    expect(tablesBlockingImport({ _emdash_migrations: 76, options: 1, _emdash_taxonomy_defs: 2, astro_sessions: 3, users: 0 })).toEqual([])
+    expect(tablesBlockingImport({ options: 1, users: 1, media: 4 })).toEqual(['users', 'media'])
+  })
+})

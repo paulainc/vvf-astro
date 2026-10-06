@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // `npm run seed`: rebuild the local EmDash database from scratch, with media.
 //
-// 1. Remove data.db* and uploads/.
+// 1. Remove data.db* and uploads/ (after confirming, see scripts/lib/confirm.mjs).
 // 2. Regenerate seed/seed.json and seed/seed.local.json from the snapshot.
 //    Media values are stable across databases (scripts/lib/seed-media.mjs),
 //    so both files already carry them.
@@ -17,6 +17,7 @@ import path from 'node:path'
 import { Kysely } from 'kysely'
 import { createDialect } from 'emdash/db/sqlite'
 import { createStorage } from 'emdash/storage/local'
+import { confirmDestructive } from './lib/confirm.mjs'
 import { readManifests, seedMedia } from './lib/seed-media.mjs'
 import { transform } from './migrate/transform.mjs'
 import { LOCAL_SEED_PATH, ROOT_DIR } from './migrate/lib/paths.mjs'
@@ -25,12 +26,17 @@ import { LOCAL_SEED_PATH, ROOT_DIR } from './migrate/lib/paths.mjs'
 // (scripts/db-setup.mjs). Everything below is the local SQLite flow.
 if (process.env.DB_ADAPTER === 'postgres') {
   const { setupDatabase } = await import('./db-setup.mjs')
-  await setupDatabase({ force: process.argv.includes('--force') })
+  await setupDatabase({ force: process.argv.includes('--force'), confirm: true })
   process.exit(0)
 }
 
 const DB_PATH = path.join(ROOT_DIR, 'data.db')
 const UPLOADS_DIR = path.join(ROOT_DIR, 'uploads')
+
+if (existsSync(path.join(ROOT_DIR, 'data.db'))) {
+  const ok = await confirmDestructive('npm run seed deletes the local database (data.db, with its users and API tokens) and uploads/, then rebuilds them.')
+  if (!ok) process.exit(1)
+}
 
 for (const file of ['data.db', 'data.db-shm', 'data.db-wal']) rmSync(path.join(ROOT_DIR, file), { force: true })
 rmSync(UPLOADS_DIR, { recursive: true, force: true })

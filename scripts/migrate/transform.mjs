@@ -188,6 +188,20 @@ export function withCopyCollections(seed, manifests, spanish = {}) {
   }
 }
 
+// Sponsor IDs come from the sponsor's name, and the live Spanish pages
+// sometimes translate a company name ("The Trusty Handyman" → "El manitas de
+// confianza"), which would point the Spanish event at a sponsor that doesn't
+// exist. A Spanish sponsor with the same logo as an English one keeps the
+// English name.
+export function alignSponsorNames(eventsEn = [], eventsEs = []) {
+  const nameByLogo = new Map()
+  for (const e of eventsEn) for (const s of e.sponsors ?? []) if (s.logo?.src) nameByLogo.set(s.logo.src, s.name)
+  return eventsEs.map((e) => ({
+    ...e,
+    sponsors: (e.sponsors ?? []).map((s) => (s.logo?.src && nameByLogo.has(s.logo.src) ? { ...s, name: nameByLogo.get(s.logo.src) } : s)),
+  }))
+}
+
 function withTranslations(live, es) {
   return Object.fromEntries(Object.entries(live).map(([k, v]) => [k, [...v, ...(es[k] ?? [])]]))
 }
@@ -257,7 +271,7 @@ export async function transform() {
     ? {
         team_members: snapEs('team_members'),
         children: snapEs('children') ?? { order: [], items: [] },
-        events: snapEs('events'),
+        events: alignSponsorNames(snap('events'), snapEs('events')),
         corporate_tiers: snapEs('corporate_tiers'),
         faqs: snapEs('faqs'),
         resources: snapEs('resources'),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alignPages, mergeTables, pageStrings, translate } from './align.mjs'
+import { alignPages, mergeTables, pageStrings, translate, linkKey } from './align.mjs'
 
 const en = `<html><head><title>Ways to Give | VVF</title><meta name="description" content="Give today."></head>
 <body><div class="hero"><h1>Make a gift today</h1><img alt="A smiling girl" src="a.jpg"><a class="button">Donate</a></div>
@@ -34,5 +34,36 @@ describe('translate / mergeTables', () => {
     expect(translate(table, 'Child’s   life')).toBe('Vida del niño')
     expect(translate(table, 'Hi')).toBe('Hola')
     expect(translate(table, 'Missing')).toBeUndefined()
+  })
+})
+
+// Review finding (PR #15): a menu that differs between the locales (or
+// between cached copies) shifted every positional pair after it, swapping
+// "Sponsor a Child" and "Ways to Give".
+describe('alignPages with menus that differ', () => {
+  const page = (links, hero) =>
+    `<html><body><nav>${links.map(([href, t]) => `<a class="nav" href="${href}">${t}</a>`).join('')}</nav>` +
+    `<div class="hero">${hero.map(([href, t]) => `<a class="btn" href="${href}">${t}</a>`).join('')}</div></body></html>`
+  const en = page(
+    [['/ways-to-give', 'Ways to Give'], ['/sponsor-a-child', 'Sponsor a Child'], ['/events', 'Events']],
+    [['/sponsor-a-child', 'Sponsor a Child'], ['/ways-to-give', 'Ways to Give']]
+  )
+  const es = page(
+    [['/es/sponsor-a-child', 'Apadrina a un niño'], ['/es/ways-to-give', 'Formas de ayudar'], ['/es/corporate', 'Patrocinios'], ['/es/events', 'Eventos']],
+    [['/es/sponsor-a-child', 'Apadrina a un niño'], ['/es/ways-to-give', 'Formas de ayudar']]
+  )
+
+  it('pairs link text by target and position, not order', () => {
+    const t = alignPages(en, es)
+    expect(t.get('Sponsor a Child')).toBe('Apadrina a un niño')
+    expect(t.get('Ways to Give')).toBe('Formas de ayudar')
+    expect(t.get('Events')).toBe('Eventos')
+  })
+
+  it('normalizes link targets across locales', () => {
+    expect(linkKey('https://www.example.org/es/ways-to-give/')).toBe('/ways-to-give')
+    expect(linkKey('/es')).toBe('/')
+    expect(linkKey('#top')).toBeUndefined()
+    expect(linkKey('mailto:a@b.org')).toBeUndefined()
   })
 })

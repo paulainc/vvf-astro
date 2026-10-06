@@ -8,6 +8,7 @@ import {
   filterChildData,
   isRestricted,
   isSafeguardingUser,
+  normalizeApiPath,
   restOperation,
   type Decision,
   type GuardContext,
@@ -50,17 +51,25 @@ function guardContext(context: APIContext, user: GuardUser): GuardContext {
 }
 
 const readsChildren = (op: Operation) =>
-  (op.args.collection === 'children' && (op.tool === 'content_list' || op.tool === 'content_get')) || op.tool === 'search'
+  (op.args.collection === 'children' && (op.tool === 'content_list' || op.tool === 'content_get')) || op.tool === 'search' || op.tool === 'dashboard'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
 export async function guardEmDashApi(context: APIContext, next: MiddlewareNext): Promise<Response | undefined> {
   const { url, request } = context
-  if (!url.pathname.startsWith(API)) return undefined
+  const path = normalizeApiPath(url.pathname)
+  if (!path.startsWith(API)) return undefined
+  // EmDash's database snapshot (every table, child profiles included) is
+  // public to its auth middleware, which leaves the user unresolved here, so
+  // it can't be guarded per role. The site doesn't use preview services:
+  // only preview-signed requests reach it.
+  if (path === `${API}snapshot` && !request.headers.has('X-Preview-Signature')) {
+    return json({ error: { code: 'FORBIDDEN_BY_POLICY', message: 'Snapshots are only available to preview services.' } }, 403)
+  }
   const user = (context.locals as { user?: GuardUser }).user
   if (!isRestricted(user)) return undefined
   const ctx = guardContext(context, user!)
-  return url.pathname === `${API}mcp` ? guardMcp(request, ctx, next) : guardRest(context, ctx, next)
+  return path === `${API}mcp` ? guardMcp(request, ctx, next) : guardRest(context, ctx, next)
 }
 
 // --- MCP (JSON-RPC over Streamable HTTP) ----------------------------------
