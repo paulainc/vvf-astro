@@ -73,5 +73,6 @@ The migration (`scripts/migrate/`) reads both locales:
 - `npm run migrate:copy` aligns each live English page with its `/es` version and translates every slot default, writing `seed/page-copy.es.json`. A page's slots are translated from that page's own live pair first (shared interface text from all pages); pages with no live Spanish version (e.g. Our Programs, the blog) are left untranslated for marketing rather than half-translated. Slots with no live counterpart are listed in `scripts/migrate/report.md` and fall back to English.
 - Slots with no live Spanish counterpart can get a reviewed translation in `MANUAL_TRANSLATIONS` (`scripts/migrate/pagecopy.mjs`). It's merged into `seed/page-copy.es.json` and never overwritten by alignment.
 - `npm run migrate:import-copy` fills empty Spanish slots in a running EmDash from that file (needs `EMDASH_SYNC_PAT`; never overwrites an editor's text).
+- `npm run migrate:fix-copy` (one-off) corrects ten Spanish slots that an earlier version of `migrate:copy` swapped ("Sponsor a Child" / "Ways to Give" and others) in a CMS that already imported them. It only changes a slot still holding the swapped value (or empty), leaves anything an editor changed, skips open drafts, and previews unless run with `-- --apply`.
 
 Child data stays out of the repository in both locales (`snapshot/es/children.json` is gitignored).
