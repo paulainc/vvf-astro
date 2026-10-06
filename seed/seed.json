@@ -3416,7 +3416,7 @@
           "format": "plain",
           "max_length": 30,
           "stale": false,
-          "value": "Formas de ayudar"
+          "value": "Apadrina a un niño"
         }
       },
       {
@@ -3448,7 +3448,7 @@
           "format": "plain",
           "max_length": 20,
           "stale": false,
-          "value": "Apadrina a un niño"
+          "value": "Formas de ayudar"
         }
       },
       {
@@ -9110,7 +9110,7 @@
           "format": "plain",
           "max_length": 160,
           "stale": false,
-          "value": "Historias, noticias, eventos e informes financieros de la Victoria Venezuela Foundation, una organización 501(c)(3) que brinda apoyo a la infancia en Venezuela."
+          "value": "Historias, noticias, eventos e informes financieros de la Fundación Victoria Venezuela, una organización 501(c)(3) que apoya a la infancia en Venezuela."
         }
       },
       {
@@ -11061,7 +11061,7 @@
           "format": "plain",
           "max_length": 30,
           "stale": false,
-          "value": "Formas de ayudar"
+          "value": "Apadrina a un niño"
         }
       },
       {
@@ -11349,7 +11349,7 @@
           "format": "plain",
           "max_length": 30,
           "stale": false,
-          "value": "Formas de ayudar"
+          "value": "Apadrina a un niño"
         }
       },
       {
@@ -14039,7 +14039,7 @@
           "format": "plain",
           "max_length": 40,
           "stale": false,
-          "value": "Formas de ayudar"
+          "value": "Apadrina a un niño"
         }
       },
       {
@@ -14071,7 +14071,7 @@
           "format": "plain",
           "max_length": 40,
           "stale": false,
-          "value": "Apadrina a un niño"
+          "value": "Formas de ayudar"
         }
       },
       {
@@ -15496,7 +15496,7 @@
           "format": "plain",
           "max_length": 30,
           "stale": false,
-          "value": "Conviértete en patrocinador"
+          "value": "Ser patrocinador"
         }
       },
       {
@@ -15528,7 +15528,7 @@
           "format": "plain",
           "max_length": 60,
           "stale": false,
-          "value": "Nosotros"
+          "value": "Recursos"
         }
       },
       {
@@ -15684,7 +15684,7 @@
           "format": "plain",
           "max_length": 30,
           "stale": false,
-          "value": "Finanzas y transparencia"
+          "value": "Historias"
         }
       },
       {
@@ -16189,7 +16189,7 @@
           "format": "plain",
           "max_length": 40,
           "stale": false,
-          "value": "Formas de ayudar"
+          "value": "Apadrina a un niño"
         }
       },
       {
@@ -20858,7 +20858,7 @@
           "format": "plain",
           "max_length": 30,
           "stale": false,
-          "value": "Conviértete en patrocinador"
+          "value": "Ser patrocinador"
         }
       },
       {
@@ -28258,7 +28258,7 @@
           "description": "74 golfistas se reunieron en The Club at Weston Hills para apoyar a más de 700 niños en Venezuela.",
           "category": "golf-tournament",
           "sponsors": [
-            "$ref:sponsor-el-manitas-de-confianza",
+            "$ref:sponsor-the-trusty-handyman",
             "$ref:sponsor-trump-hotels",
             "$ref:sponsor-santa-teresa-1796",
             "$ref:sponsor-microsoft",
@@ -28348,7 +28348,7 @@
             "$ref:sp-2026-golf-tournament-golf-winners-circle"
           ],
           "sponsors": [
-            "$ref:sponsor-el-manitas-de-confianza",
+            "$ref:sponsor-the-trusty-handyman",
             "$ref:sponsor-santa-teresa-1796",
             "$ref:sponsor-venezuelan-american-chamber-of-commerce",
             "$ref:sponsor-trump-hotels",
