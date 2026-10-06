@@ -5,6 +5,7 @@ import {
   isRestricted,
   isSafeguardingUser,
   menuItemsProblem,
+  normalizeApiPath,
   restOperation,
   sameSiteLinkProblem,
   slotEditProblem,
@@ -212,8 +213,52 @@ describe('restOperation', () => {
     expect(restOperation(method, path, {}, q)?.tool).toBe(tool)
   })
 
-  it('leaves other admin endpoints to EmDash', () => {
+  it('leaves the pass-through areas to EmDash', () => {
     expect(restOperation('GET', '/_emdash/api/manifest', undefined, q)).toBeUndefined()
     expect(restOperation('POST', '/_emdash/api/media', {}, q)).toBeUndefined()
+    expect(restOperation('GET', '/_emdash/api/admin/bylines', undefined, q)).toBeUndefined()
+  })
+
+  // Review finding (PR #16): a body could replace the URL's collection/id.
+  it('never lets the body retarget an operation', async () => {
+    const update = restOperation('PUT', '/_emdash/api/content/children/pub', { collection: 'events', id: 'e1', data: {} }, q)!
+    expect(update.args).toMatchObject({ collection: 'children', id: 'pub' })
+    expect((await checkOperation(update, ctx())).allow).toBe(false)
+    const publish = restOperation('POST', '/_emdash/api/content/children/pub/publish', { collection: 'events' }, q)!
+    expect((await checkOperation(publish, ctx())).allow).toBe(false)
+    const create = restOperation('POST', '/_emdash/api/content/children', { collection: 'events', data: {} }, q)!
+    expect(create.args.collection).toBe('children')
+    const menu = restOperation('PUT', '/_emdash/api/menus/primary', { name: 'other' }, q)!
+    expect(menu.args.name).toBe('primary')
+  })
+
+  // Review finding (PR #16): unmapped REST areas went straight to EmDash.
+  it.each([
+    ['GET', '/_emdash/api/relations/r1'],
+    ['GET', '/_emdash/api/import'],
+    ['POST', '/_emdash/api/plugins/x/run'],
+    ['POST', '/_emdash/api/schema/collections'],
+    ['GET', '/_emdash/api/something-new'],
+  ])('refuses unmapped %s %s', async (method, path) => {
+    const op = restOperation(method, path, {}, q)
+    expect(op).toBeDefined()
+    expect((await checkOperation(op!, ctx())).allow).toBe(false)
+  })
+
+  it('guards revision reads and filters search and the dashboard', async () => {
+    const child = restOperation('GET', '/_emdash/api/revisions/rev-child', undefined, q)!
+    expect(await checkOperation(child, ctx())).toMatchObject({ allow: false, status: 404 })
+    expect(await checkOperation(child, ctx({ safeguarding: true }))).toEqual({ allow: true })
+    const other = restOperation('GET', '/_emdash/api/revisions/rev-faq', undefined, q)!
+    expect(await checkOperation(other, ctx())).toEqual({ allow: true })
+    expect(restOperation('GET', '/_emdash/api/search', undefined, new URLSearchParams('q=a&status=draft'))?.tool).toBe('search')
+    expect(restOperation('GET', '/_emdash/api/dashboard', undefined, q)?.tool).toBe('dashboard')
+  })
+
+  // Review finding (PR #16): `/mcp/` reached EmDash's MCP route unguarded.
+  it('normalizes trailing and doubled slashes', () => {
+    expect(normalizeApiPath('/_emdash/api/mcp/')).toBe('/_emdash/api/mcp')
+    expect(normalizeApiPath('/_emdash//api/mcp//')).toBe('/_emdash/api/mcp')
+    expect(restOperation('PUT', '/_emdash/api/content/children/pub/', {}, q)?.args).toMatchObject({ collection: 'children', id: 'pub' })
   })
 })
