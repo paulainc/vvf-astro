@@ -8,7 +8,7 @@
 // otherwise (marked with `fallbackLocale: 'en'`); detail getters return
 // undefined only when the entry exists in neither locale. Pages never
 // implement fallback themselves.
-import { getEmDashCollection, getEmDashEntry, getMenu, type MenuItem } from 'emdash'
+import { getEmDashCollection, getMenu, type MenuItem } from 'emdash'
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '../i18n'
 import { copyCollectionFor } from '../cmsNavigation.mjs'
 import { resolveCopy, type CopyManifest, type ResolvedCopy, type SlotSpec, type StoredSlot } from '../copy'
@@ -61,6 +61,7 @@ function resolveImage(image: EmDashImage | undefined | null): string | undefined
 type QueryFilter = NonNullable<Parameters<typeof getEmDashCollection>[1]>
 
 interface RawEntry {
+  id?: string
   slug?: string
   data: Record<string, any>
 }
@@ -158,7 +159,9 @@ function toSeo(d: Record<string, any>): Seo | undefined {
 }
 
 // Reference fields hold entry ids (ids are unique across locales); each
-// referenced entry is shown in `locale` when it has a translation.
+// referenced entry is shown in `locale` when it has a translation. The
+// referenced collection is read with one list query (EmDash caches it for the
+// rest of the request) rather than one query per reference.
 async function resolveRefs<T>(
   collection: string,
   ids: unknown,
@@ -166,8 +169,11 @@ async function resolveRefs<T>(
   locale: Locale = DEFAULT_LOCALE
 ): Promise<T[] | undefined> {
   if (!Array.isArray(ids) || ids.length === 0) return undefined
-  const results = await Promise.all(ids.map((id) => getEmDashEntry(collection, String(id))))
-  const found = results.flatMap((r) => (r.entry ? [r.entry as unknown as RawEntry] : []))
+  const byId = new Map<string, RawEntry>()
+  for (const e of await queryLocale(collection, { limit: LIST_LIMIT }, DEFAULT_LOCALE)) {
+    for (const key of [e.id, e.data.id]) if (key != null) byId.set(String(key), e)
+  }
+  const found = ids.flatMap((id) => byId.get(String(id)) ?? [])
   if (locale === DEFAULT_LOCALE) return found.map((e) => map(e.data))
   const translated = new Map(
     (await queryLocale(collection, { limit: LIST_LIMIT }, locale)).map((e) => [groupOf(e), e.data])
