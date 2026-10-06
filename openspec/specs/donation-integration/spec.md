@@ -1,7 +1,7 @@
 # donation-integration Specification
 
 ## Purpose
-Facilitates donor donations via Donorbox embed.
+Takes donations through Donorbox embeds: general and recurring gifts, child sponsorships, the earthquake relief campaign, event tickets and sponsorships, corporate sponsorship inquiries and employer matching.
 
 ## Requirements
 
