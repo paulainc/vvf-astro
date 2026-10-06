@@ -45,12 +45,13 @@ Content that belongs to one CMS item (for example the 2026 tournament's earthqua
 
 `npm run cms:schema` (with `EMDASH_ADMIN_TOKEN`, an admin token with `schema:read` + `schema:write`, and `EMDASH_URL`) creates missing copy collections and fields and updates every collection's sidebar settings. It never touches menus, settings or content, and a second run changes nothing; `--dry-run` shows what it would do. Don't use `emdash seed --on-conflict update` on a live CMS: it rebuilds menus and overwrites site settings.
 
-Upgrading a CMS that still has the old single `page_copy` collection, once per environment:
+Upgrading a CMS that still has the old single `page_copy` collection, once per environment, **before** deploying the new code (run both commands from a checkout of the new code, pointed at the environment with `EMDASH_URL`):
 
-1. Deploy the code (pages render their defaults until step 3).
-2. `npm run cms:schema -- --dry-run`, review, then `npm run cms:schema`.
-3. `npm run migrate:copy-collections` moves each slot's published value, any open draft (kept as a draft) and its Spanish version into the page's collection, then hides `page_copy` (kept, not deleted; revision history isn't carried over). Re-running changes nothing.
-4. Restart the server so the sync fills anything still missing.
+1. `npm run cms:schema -- --dry-run`, review, then `npm run cms:schema`.
+2. `npm run migrate:copy-collections` moves each slot's published value, any open draft (kept as a draft) and its Spanish version into the page's collection, then hides `page_copy` from the sidebar (kept, not deleted; revision history isn't carried over). Re-running changes nothing.
+3. Deploy the code. Its sync fills any slot still missing when it starts.
+
+The running (old) site keeps reading `page_copy` until the deploy, so nothing changes for visitors in between. Pause copy edits from step 2 until the deploy: edits to the hidden `page_copy` would be lost, and edits in the new collections only show after it. Deploying first instead would show every page's default copy until the migration ran.
 
 ### Adding a page
 
