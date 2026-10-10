@@ -546,8 +546,8 @@ describe('getPageCopy', () => {
 
   function copyRows(rows: Record<string, { key: string; value: string }[]>) {
     getEmDashCollection.mockImplementation(async (collection: string, filter: { locale?: string; where?: unknown }) => {
-      expect(collection).toBe('page_copy')
-      expect(filter.where).toEqual({ route_path: '/ways-to-give' })
+      expect(collection).toBe('copy_ways_to_give')
+      expect(filter.where).toBeUndefined()
       return { entries: (rows[filter.locale ?? 'en'] ?? []).map((d) => ({ slug: d.key, data: d })) }
     })
   }
@@ -575,6 +575,13 @@ describe('getPageCopy', () => {
     })
     const { copy, locales } = await getPageCopy(manifest, 'es')
     expect(copy['hero.heading']).toBe('Formas de ayudar')
+    expect(locales).toEqual(['en'])
+  })
+
+  it('renders defaults when the page has no copy collection yet', async () => {
+    getEmDashCollection.mockRejectedValue(new Error('Collection not found: copy_ways_to_give'))
+    const { copy, locales } = await getPageCopy(manifest, 'es')
+    expect(copy).toEqual({ 'seo.title': 'Ways to Give', 'hero.heading': 'Ways to give', 'hero.body': 'Every gift counts.' })
     expect(locales).toEqual(['en'])
   })
 })
