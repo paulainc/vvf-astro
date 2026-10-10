@@ -1294,7 +1294,10 @@
     "appealPanel.label.2": "Más información",
     "sectionTitle2.heading": "Preguntas frecuentes",
     "appealPanel.cardsLabel": "En qué se utilizará su donativo",
-    "pastelCard.label.1": "Vamos a comprobarlo"
+    "pastelCard.label.1": "Vamos a comprobarlo",
+    "appealPanel.imageAlt.1": "Familias llegando al patio del futuro centro de apoyo de VVF.",
+    "appealPanel.imageAlt.2": "Una enfermera examina a una niña mientras su madre está sentada a su lado.",
+    "appealPanel.cards.nutritionAlt": "Niños comiendo juntos una comida caliente en el comedor del centro."
   },
   "/resources/category/stories": {
     "seo.title": "Historias | Recursos | Fundación Victoria Venezuela",
@@ -1468,7 +1471,10 @@
     "responseTimeline.title.3": "Fortalecimiento",
     "responseTimeline.text.3": "Ayudando a las familias a recuperar la estabilidad y la rutina",
     "responseTimeline.title.4": "Sostenibilidad",
-    "responseTimeline.text.4": "Apoyo a la recuperación y resiliencia a largo plazo."
+    "responseTimeline.text.4": "Apoyo a la recuperación y resiliencia a largo plazo.",
+    "appealPanel.imageAlt.1": "Familias llegando al patio del futuro centro de apoyo de VVF.",
+    "appealPanel.imageAlt.2": "Una enfermera examina a una niña mientras su madre está sentada a su lado.",
+    "appealPanel.cards.nutritionAlt": "Niños comiendo juntos una comida caliente en el comedor del centro."
   },
   "/events/*": {
     "hero.label.1": "Comprar entradas",
