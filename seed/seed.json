@@ -12721,7 +12721,8 @@
           "position": 41,
           "format": "plain",
           "max_length": 110,
-          "stale": false
+          "stale": false,
+          "value": "Familias llegando al patio del futuro centro de apoyo de VVF."
         }
       },
       {
@@ -12816,7 +12817,8 @@
           "position": 44,
           "format": "plain",
           "max_length": 100,
-          "stale": false
+          "stale": false,
+          "value": "Una enfermera examina a una niña mientras su madre está sentada a su lado."
         }
       },
       {
@@ -13071,7 +13073,8 @@
           "position": 52,
           "format": "plain",
           "max_length": 100,
-          "stale": false
+          "stale": false,
+          "value": "Niños comiendo juntos una comida caliente en el comedor del centro."
         }
       }
     ],
@@ -19614,7 +19617,8 @@
           "position": 26,
           "format": "plain",
           "max_length": 110,
-          "stale": false
+          "stale": false,
+          "value": "Familias llegando al patio del futuro centro de apoyo de VVF."
         }
       },
       {
@@ -19709,7 +19713,8 @@
           "position": 29,
           "format": "plain",
           "max_length": 100,
-          "stale": false
+          "stale": false,
+          "value": "Una enfermera examina a una niña mientras su madre está sentada a su lado."
         }
       },
       {
@@ -20760,7 +20765,8 @@
           "position": 62,
           "format": "plain",
           "max_length": 100,
-          "stale": false
+          "stale": false,
+          "value": "Niños comiendo juntos una comida caliente en el comedor del centro."
         }
       }
     ],
@@ -26197,21 +26203,21 @@
         "translationOf": "sp-general-trustee",
         "data": {
           "scope": "general",
-          "tier_name": "Patrocinador",
+          "tier_name": "Benefactor",
           "price": "2.500 $/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report",
-            "Visibility in branding (website, email campaigns, social media, and events)",
-            "Board Donor Plaque"
+            "Inclusión en el informe anual",
+            "Visibilidad de marca (sitio web, campañas de correo electrónico, redes sociales y eventos)",
+            "Placa de donante de la junta"
           ],
           "activity_benefits": [
-            "Participation in the annual gala speech",
-            "Participation in the annual mission trip",
-            "Participation in the annual Board review"
+            "Participación en el discurso de la gala anual",
+            "Participación en el viaje misionero anual",
+            "Participación en la revisión anual de la junta"
           ],
           "promotional_benefits": [
-            "(5) Polo shirts with the foundation’s logo",
-            "(25) Foundation stickers"
+            "(5) Polos con el logotipo de la fundación",
+            "(25) Pegatinas de la fundación"
           ],
           "order": 1
         }
@@ -26226,13 +26232,13 @@
           "tier_name": "Líder",
           "price": "1.000 $/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report",
-            "Visibility in branding (website, email campaigns, social media, and events)",
-            "Board Donor Plaque"
+            "Inclusión en el informe anual",
+            "Visibilidad de marca (sitio web, campañas de correo electrónico, redes sociales y eventos)",
+            "Placa de donante de la junta"
           ],
           "promotional_benefits": [
-            "(5) Polo shirts with the foundation’s logo",
-            "(25) Foundation stickers"
+            "(5) Camisas tipo polo con el logotipo de la fundación",
+            "(25) Pegatinas de la fundación"
           ],
           "order": 2
         }
@@ -26247,11 +26253,11 @@
           "tier_name": "Asesor",
           "price": "$500/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report",
-            "Visibility in branding (website, email campaigns, social media, and events)"
+            "Inclusión en el informe anual",
+            "Visibilidad en la marca (sitio web, campañas de correo electrónico, redes sociales y eventos)"
           ],
           "promotional_benefits": [
-            "(25) Foundation stickers"
+            "(25) Pegatinas de la fundación"
           ],
           "order": 3
         }
@@ -26266,10 +26272,10 @@
           "tier_name": "Amigo",
           "price": "$250/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report"
+            "Inclusión en el informe anual"
           ],
           "promotional_benefits": [
-            "(25) Foundation stickers"
+            "(25) Pegatinas de la fundación"
           ],
           "order": 4
         }
@@ -28744,19 +28750,19 @@
               "title": "Alojamiento",
               "text": "Un lugar seguro donde alojarse para las familias cuyos hogares fueron destruidos en los terremotos de junio de 2026.",
               "image_url": "/images/pages/467d8fd3-vvf-laguaira-card-shelter-web-v1.jpg",
-              "image_alt": "Families arriving at the courtyard of the planned VVF support centre."
+              "image_alt": "Familias llegando al patio del futuro centro de apoyo de VVF."
             },
             {
               "title": "Atención médica",
               "text": "Revisiones, medicamentos y tratamiento para los niños y sus familias en el centro.",
               "image_url": "/images/pages/2631b854-vvf-laguaira-card-medicalcare-web-v1.jpg",
-              "image_alt": "A nurse examining a young girl while her mother sits beside her."
+              "image_alt": "Una enfermera examina a una niña mientras su madre está sentada a su lado."
             },
             {
               "title": "Nutrición",
               "text": "Comidas diarias para los niños que se alojen en el centro de apoyo de La Guaira.",
               "image_url": "/images/pages/c84863db-vvf-laguaira-card-nutrition-web-v1.jpg",
-              "image_alt": "Children eating a hot meal together in the centre's dining room."
+              "image_alt": "Niños comiendo juntos una comida caliente en el comedor del centro."
             }
           ],
           "appeal_cta_label": "Más información",
