@@ -30,6 +30,10 @@ When content for the requested locale is missing, the site SHALL fall back to En
 - **WHEN** `/es/events/<slug>` is requested and no event with that slug exists in either locale
 - **THEN** the site responds 404
 
+#### Scenario: English item taken down
+- **WHEN** an item's English version is unpublished or hidden (for a child profile, its `published` flag turned off) while its Spanish version is still published
+- **THEN** the item is hidden under `/es` as well: it is left out of Spanish lists and its `/es` detail URL responds 404
+
 #### Scenario: Spanish copy slot missing
 - **WHEN** a Spanish static page renders and one of its copy slots has no Spanish value
 - **THEN** that slot shows its English value and the rest of the page shows Spanish

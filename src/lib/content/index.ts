@@ -93,7 +93,7 @@ async function queryLocale(collection: string, filter: QueryFilter, locale: Loca
 const OTHER_LOCALE: Record<Locale, Locale> = { en: 'es', es: 'en' }
 
 // English entries, in query order, each swapped for its translation in
-// `locale` when one exists; entries that exist only in `locale` follow.
+// `locale` when one exists.
 // English lists skip the Spanish query unless `withSlugs` (detail pages need
 // to know whether a translation exists).
 async function listEntries(
@@ -125,17 +125,11 @@ async function listEntries(
     if (!t) return { slug: e.slug ?? '', data: e.data, fallbackLocale: DEFAULT_LOCALE, slugs, variants }
     return { slug: t.slug ?? '', data: t.data, enSlug: e.slug, slugs, variants }
   })
-  // Entries that exist only in the other locale are listed only there.
-  const onlyOther =
-    locale === DEFAULT_LOCALE
-      ? []
-      : [...byGroup.values()].map((e) => ({
-          slug: e.slug ?? '',
-          data: e.data,
-          slugs: { [other]: e.slug ?? '' },
-          variants: { [other]: e.data },
-        }))
-  return [...resolved, ...onlyOther]
+  // A translation is shown only while its English entry is live: unpublishing
+  // (or hiding, e.g. a child profile's `published` flag) the English entry
+  // takes every locale down with it. Translations left in `byGroup` have no
+  // live English entry and are dropped.
+  return resolved
 }
 
 function matchesSlug(e: LocalizedEntry, slug: string): boolean {

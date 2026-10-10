@@ -15,6 +15,7 @@ const {
   getEventBySlug,
   isUpcoming,
   getChildren,
+  getChildBySlug,
   getTeamMembers,
   getTeamMemberBySlug,
   getPosts,
@@ -425,15 +426,27 @@ describe('locale resolution', () => {
     ])
   })
 
-  it('keeps entries that exist only in Spanish', async () => {
+  it('hides a translation whose English entry is not live', async () => {
+    // EmDash only returns published rows, so an unpublished English entry is
+    // simply absent from the English query.
     byLocale({
       en: [],
       es: [row('solo-es', 'es', 'g9', { question: '¿Qué?', answer: 'Esto', category: 'general' })],
     })
 
-    expect(await getFaqs(undefined, 'es')).toEqual([
-      { question: '¿Qué?', answer: 'Esto', category: 'general', order: undefined },
-    ])
+    expect(await getFaqs(undefined, 'es')).toEqual([])
+  })
+
+  it('takes a child profile down in Spanish when it is hidden in English', async () => {
+    // The `published: 1` filter excludes the hidden English profile; its
+    // Spanish row still says published.
+    byLocale({
+      en: [],
+      es: [row('ana', 'es', 'c1', { display_name: 'Ana', published: 1 })],
+    })
+
+    expect(await getChildren('es')).toEqual([])
+    expect(await getChildBySlug('ana', 'es')).toBeUndefined()
   })
 
   it('finds a detail entry by its Spanish slug or its English counterpart slug', async () => {
