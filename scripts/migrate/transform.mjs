@@ -36,11 +36,14 @@ const snap = (name) => readJson(path.join(SNAPSHOT_DIR, `${name}.json`))
 export function createContext(mediaMap) {
   const notes = []
   const missing = new Set()
-  const media = (src) => {
+  // A media item is harvested once, with the first description found (the
+  // English page's). Pass the page's own `alt` to describe the image in that
+  // page's language, e.g. a Spanish event's photos.
+  const media = (src, alt) => {
     if (!src) return undefined
     const value = mediaMap[src]
     if (!value) missing.add(src)
-    return value
+    return value && alt && alt !== value.alt ? { ...value, alt } : value
   }
   return {
     notes,

@@ -76,4 +76,10 @@ describe('corrected', () => {
     expect(translate(table, 'Financials & Transparency')).toBe('Finanzas y transparencia')
     expect(translate(table, 'Our Team')).toBe('Nuestro equipo')
   })
+
+  it('adds the text the live Spanish site never translated', () => {
+    expect(translate(corrected(new Map()), 'Children eating a hot meal together in the centre’s dining room.')).toBe(
+      'Niños comiendo juntos una comida caliente en el comedor del centro.'
+    )
+  })
 })

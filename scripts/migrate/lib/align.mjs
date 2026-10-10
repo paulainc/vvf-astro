@@ -114,8 +114,17 @@ export function alignPages(enHtml, esHtml) {
 // "Financials & Transparency" link lined up with "Nuestro equipo").
 export const ALIGNMENT_CORRECTIONS = new Map([['Financials & Transparency', 'Finanzas y transparencia']])
 
+// Text the live /es site never translated (it shows the English), translated
+// here until marketing reviews the Spanish: the 2026 event's appeal card
+// image descriptions (review finding on PR #15).
+export const MISSING_TRANSLATIONS = new Map([
+  ['Families arriving at the courtyard of the planned VVF support centre.', 'Familias llegando al patio del futuro centro de apoyo de VVF.'],
+  ['A nurse examining a young girl while her mother sits beside her.', 'Una enfermera examina a una niña mientras su madre está sentada a su lado.'],
+  ["Children eating a hot meal together in the centre's dining room.", 'Niños comiendo juntos una comida caliente en el comedor del centro.'],
+])
+
 export function corrected(table) {
-  return mergeTables([ALIGNMENT_CORRECTIONS, table])
+  return mergeTables([ALIGNMENT_CORRECTIONS, MISSING_TRANSLATIONS, table])
 }
 
 export function mergeTables(tables) {

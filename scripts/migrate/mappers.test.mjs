@@ -81,6 +81,19 @@ describe('mapChildren', () => {
 })
 
 describe('mapEvents', () => {
+  // Review finding (PR #15): Spanish events showed the English photo
+  // descriptions harvested with the media.
+  it("describes each event photo in its own page's language", () => {
+    const harvested = { [`${CDN}/golf.jpg`]: { provider: 'local', id: 'm-golf', alt: 'Three golfers on the green.' } }
+    const spanish = { src: `${CDN}/golf.jpg`, alt: 'Tres golfistas en el green.' }
+    const page = { slug: 'golf', title: 'Golf', dateText: 'November 1, 2031', heroImage: spanish, sponsors: [], offers: [], benefitRows: [], faqs: [], gallery: [spanish], recapStats: [] }
+    const [event] = mapEvents([page], createContext(harvested)).events
+    expect(event.data.hero_image).toEqual({ provider: 'local', id: 'm-golf', alt: 'Tres golfistas en el green.' })
+    expect(event.data.image.alt).toBe('Tres golfistas en el green.')
+    expect(event.data.gallery[0].alt).toBe('Tres golfistas en el green.')
+    expect(harvested[`${CDN}/golf.jpg`].alt).toBe('Three golfers on the green.')
+  })
+
   it('maps offers by kind, dedupes sponsors, links FAQs', () => {
     const ctx = createContext(mediaMap)
     const sponsor = { name: 'Sponsor Co', website: 'https://s.example', logo: { src: `${CDN}/s.png` } }
