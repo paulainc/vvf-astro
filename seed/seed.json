@@ -1313,7 +1313,7 @@
         "translationOf": "sp-general-trustee",
         "data": {
           "scope": "general",
-          "tier_name": "Patrocinador",
+          "tier_name": "Benefactor",
           "price": "2.500 $/año",
           "recognition_benefits": [
             "Inclusion in the Annual Report",
