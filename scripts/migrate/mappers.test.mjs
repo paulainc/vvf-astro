@@ -82,6 +82,19 @@ describe('mapChildren', () => {
 })
 
 describe('mapEvents', () => {
+  // Review finding (PR #15): Spanish events showed the English photo
+  // descriptions harvested with the media.
+  it("describes each event photo in its own page's language", () => {
+    const harvested = { [`${CDN}/golf.jpg`]: { provider: 'local', id: 'm-golf', alt: 'Three golfers on the green.' } }
+    const spanish = { src: `${CDN}/golf.jpg`, alt: 'Tres golfistas en el green.' }
+    const page = { slug: 'golf', title: 'Golf', dateText: 'November 1, 2031', heroImage: spanish, sponsors: [], offers: [], benefitRows: [], faqs: [], gallery: [spanish], recapStats: [] }
+    const [event] = mapEvents([page], createContext(harvested)).events
+    expect(event.data.hero_image).toEqual({ provider: 'local', id: 'm-golf', alt: 'Tres golfistas en el green.' })
+    expect(event.data.image.alt).toBe('Tres golfistas en el green.')
+    expect(event.data.gallery[0].alt).toBe('Tres golfistas en el green.')
+    expect(harvested[`${CDN}/golf.jpg`].alt).toBe('Three golfers on the green.')
+  })
+
   it('maps offers by kind, dedupes sponsors, links FAQs', () => {
     const ctx = createContext(mediaMap)
     const sponsor = { name: 'Sponsor Co', website: 'https://s.example', logo: { src: `${CDN}/s.png` } }
@@ -240,11 +253,11 @@ describe('translatedEntries', () => {
   it('pairs by id, falls back to position, remaps refs and keeps English data the Spanish page lacks', () => {
     const live = {
       events: [e('event-golf', 'golf', { title: 'Golf', start_date: '2026-11-09', sponsor_packages: ['$ref:sp-golf-gold'], appeal_heading: 'Supports relief' })],
-      sponsorship_packages: [e('sp-general-trustee', undefined, { tier_name: 'Trustee', price: '$2,500' })],
+      sponsorship_packages: [e('sp-general-leader', undefined, { tier_name: 'Leader', price: '$1,000' })],
     }
     const liveEs = {
       events: [e('event-golf', 'golf', { title: 'Golf ES', sponsor_packages: ['$ref:sp-golf-oro'], appeal_heading: 'Supports relief' })],
-      sponsorship_packages: [e('sp-general-fiduciario', undefined, { tier_name: 'Fiduciario' })],
+      sponsorship_packages: [e('sp-general-lider', undefined, { tier_name: 'Líder' })],
     }
     const { entries, unpaired } = translatedEntries(live, liveEs, new Map([['Supports relief', 'Apoya el alivio']]))
     expect(unpaired).toEqual([])
@@ -257,9 +270,15 @@ describe('translatedEntries', () => {
       data: { title: 'Golf ES', start_date: '2026-11-09', sponsor_packages: ['$ref:sp-golf-oro'], appeal_heading: 'Apoya el alivio' },
     })
     expect(entries.sponsorship_packages[0]).toMatchObject({
-      translationOf: 'sp-general-trustee',
-      data: { tier_name: 'Fiduciario', price: '$2,500' },
+      translationOf: 'sp-general-leader',
+      data: { tier_name: 'Líder', price: '$1,000' },
     })
+  })
+
+  it('uses the chosen Spanish term over the live one (Trustee → Benefactor)', () => {
+    const live = { sponsorship_packages: [e('sp-general-trustee', undefined, { tier_name: 'Trustee' })] }
+    const liveEs = { sponsorship_packages: [e('sp-general-patrocinador', undefined, { tier_name: 'Patrocinador' })] }
+    expect(translatedEntries(live, liveEs).entries.sponsorship_packages[0].data.tier_name).toBe('Benefactor')
   })
 
   it('remaps a reference to the English id of a positionally paired entry', () => {
