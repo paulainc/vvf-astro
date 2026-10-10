@@ -44,6 +44,12 @@ Refusals come back as readable messages (an MCP tool error, or a 403/404 from th
 
 Every content collection and every page copy collection keeps drafts and a revision history: unpublished edits never reach the site, any published change can be undone by restoring an earlier revision, and deletes go to the trash (permanent deletes are admin-only).
 
+## Activity log
+
+Marketing users may publish directly, including through their AI assistants, so every publish and unpublish is recorded: when, which item and language, who, and how — **AI assistant (MCP)**, **API token**, **Admin** (by hand), or **Scheduled**. Admins see it on the **Activity** page in the admin sidebar (other roles are refused).
+
+It's a small EmDash plugin in this repo (`src/plugins/activityLog.ts`, registered in `astro.config.mjs`). EmDash's publish hooks don't say who published, so `src/middleware.ts` runs each `/_emdash/api/` request with its user and channel (`src/lib/activityContext.ts`) and the plugin reads them back. Child profiles are logged by slug only.
+
 ## Testing
 
 `src/lib/marketingGuard.test.ts` covers each rule; `e2e/drafts.spec.ts` checks drafts, publishing and revision restore against a running server (it needs `EMDASH_SYNC_PAT` and is skipped in CI).
