@@ -85,6 +85,16 @@ describe('child profiles', () => {
     expect((await check('revision_restore', { revisionId: 'rev-faq' })).allow).toBe(true)
   })
 
+  it('refuses a revision whose collection it cannot confirm', async () => {
+    const missing = ctx({ revisionCollection: async () => undefined })
+    const failing = ctx({ revisionCollection: async () => Promise.reject(new Error('database unavailable')) })
+    for (const c of [missing, failing]) {
+      expect(await check('revision_restore', { revisionId: 'rev-x' }, c)).toMatchObject({ allow: false, status: 404 })
+      expect(await check('revision_get', { revisionId: 'rev-x' }, c)).toMatchObject({ allow: false, status: 404 })
+    }
+    expect((await check('revision_restore', { revisionId: 'rev-x' }, ctx({ safeguarding: true, revisionCollection: async () => undefined }))).allow).toBe(true)
+  })
+
   it('filters lists: drops unpublished profiles and strips the private name everywhere', () => {
     const body = {
       items: [
