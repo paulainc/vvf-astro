@@ -15,6 +15,7 @@ const {
   getEventBySlug,
   isUpcoming,
   getChildren,
+  getChildBySlug,
   getTeamMembers,
   getTeamMemberBySlug,
   getPosts,
@@ -427,15 +428,27 @@ describe('locale resolution', () => {
     ])
   })
 
-  it('keeps entries that exist only in Spanish', async () => {
+  it('hides a translation whose English entry is not live', async () => {
+    // EmDash only returns published rows, so an unpublished English entry is
+    // simply absent from the English query.
     byLocale({
       en: [],
       es: [row('solo-es', 'es', 'g9', { question: '¿Qué?', answer: 'Esto', category: 'general' })],
     })
 
-    expect(await getFaqs(undefined, 'es')).toEqual([
-      { question: '¿Qué?', answer: 'Esto', category: 'general', order: undefined },
-    ])
+    expect(await getFaqs(undefined, 'es')).toEqual([])
+  })
+
+  it('takes a child profile down in Spanish when it is hidden in English', async () => {
+    // The `published: 1` filter excludes the hidden English profile; its
+    // Spanish row still says published.
+    byLocale({
+      en: [],
+      es: [row('ana', 'es', 'c1', { display_name: 'Ana', published: 1 })],
+    })
+
+    expect(await getChildren('es')).toEqual([])
+    expect(await getChildBySlug('ana', 'es')).toBeUndefined()
   })
 
   it('finds a detail entry by its Spanish slug or its English counterpart slug', async () => {
@@ -526,6 +539,7 @@ describe('locale resolution', () => {
 
 describe('getPageCopy', () => {
   const manifest = defineCopy('/ways-to-give', {
+    'seo.title': { label: 'SEO title', default: 'Ways to Give' },
     'hero.heading': { label: 'Hero heading', default: 'Ways to give' },
     'hero.body': { label: 'Hero text', default: 'Every gift counts.' },
   })
@@ -538,20 +552,29 @@ describe('getPageCopy', () => {
     })
   }
 
-  it('resolves slots with es -> en -> default fallback and reports locales with own copy', async () => {
+  it('resolves slots with es -> en -> default fallback, and counts the page as Spanish once its SEO title is', async () => {
     copyRows({
       en: [{ key: 'hero.heading', value: 'Ways to Give' }],
-      es: [{ key: 'hero.heading', value: 'Formas de ayudar' }],
+      es: [
+        { key: 'seo.title', value: 'Formas de ayudar | VVF' },
+        { key: 'hero.heading', value: 'Formas de ayudar' },
+      ],
     })
     const { copy, locales } = await getPageCopy(manifest, 'es')
-    expect(copy).toEqual({ 'hero.heading': 'Formas de ayudar', 'hero.body': 'Every gift counts.' })
+    expect(copy).toEqual({ 'seo.title': 'Formas de ayudar | VVF', 'hero.heading': 'Formas de ayudar', 'hero.body': 'Every gift counts.' })
     expect(locales).toEqual(['en', 'es'])
   })
 
-  it('reports English only when no Spanish slot has a value', async () => {
-    copyRows({ en: [{ key: 'hero.heading', value: 'Ways to Give' }], es: [{ key: 'hero.heading', value: '' }] })
+  it('reports English only while the Spanish SEO title is empty, even with other Spanish text', async () => {
+    copyRows({
+      en: [{ key: 'hero.heading', value: 'Ways to Give' }],
+      es: [
+        { key: 'seo.title', value: ' ' },
+        { key: 'hero.heading', value: 'Formas de ayudar' },
+      ],
+    })
     const { copy, locales } = await getPageCopy(manifest, 'es')
-    expect(copy['hero.heading']).toBe('Ways to Give')
+    expect(copy['hero.heading']).toBe('Formas de ayudar')
     expect(locales).toEqual(['en'])
   })
 })
