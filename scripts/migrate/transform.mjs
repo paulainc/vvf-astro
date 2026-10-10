@@ -43,11 +43,14 @@ const snap = (name) => readJson(path.join(SNAPSHOT_DIR, `${name}.json`))
 export function createContext(mediaMap) {
   const notes = []
   const missing = new Set()
-  const media = (src) => {
+  // A media item is harvested once, with the first description found (the
+  // English page's). Pass the page's own `alt` to describe the image in that
+  // page's language, e.g. a Spanish event's photos.
+  const media = (src, alt) => {
     if (!src) return undefined
     const value = mediaMap[src]
     if (!value) missing.add(src)
-    return value
+    return value && alt && alt !== value.alt ? { ...value, alt } : value
   }
   return {
     notes,
@@ -92,6 +95,24 @@ function translateExtras(data, table) {
   return out
 }
 
+// Spanish terms chosen here over the live /es site's, keyed by collection,
+// field and English value. The live Spanish was machine translated and hasn't
+// been audited; these are stopgaps until marketing reviews the translations
+// in the CMS. "Patrocinador" for the Trustee tier read as the generic word for
+// any sponsor (review finding on PR #15).
+export const SPANISH_TERMS = {
+  sponsorship_packages: { tier_name: { Trustee: 'Benefactor' } },
+}
+
+function withSpanishTerms(collection, enData, data) {
+  const out = { ...data }
+  for (const [field, terms] of Object.entries(SPANISH_TERMS[collection] ?? {})) {
+    const term = terms[enData[field]]
+    if (term) out[field] = term
+  }
+  return out
+}
+
 // Spanish entries for every English entry that has a live Spanish version.
 // Pairs by entry id (ids derive from slugs, which are the same in both
 // locales) and, for ids built from translated names (e.g. corporate tier
@@ -131,6 +152,7 @@ export function translatedEntries(live, liveEs, table = new Map()) {
     out[collection] = list.map(([en, es]) => {
       let data = Object.fromEntries(Object.entries({ ...en.data, ...es.data }).map(([k, v]) => [k, remapRefs(v)]))
       if (collection === 'events') data = translateExtras(data, table)
+      data = withSpanishTerms(collection, en.data, data)
       return {
         id: `${en.id}--es`,
         ...(en.slug ? { slug: en.slug } : {}),
