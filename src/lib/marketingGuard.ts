@@ -123,7 +123,11 @@ export async function checkOperation(op: Operation, ctx: GuardContext): Promise<
     // content_list / search results are filtered by filterChildData.
   }
   if ((tool === 'revision_restore' || tool === 'revision_get') && !ctx.safeguarding) {
-    if ((await ctx.revisionCollection(String(args.revisionId))) === CHILDREN) {
+    // A revision whose collection can't be read (missing, or the lookup
+    // failed) is treated as a child's: refuse rather than let it through.
+    const revisionCollection = await ctx.revisionCollection(String(args.revisionId)).catch(() => undefined)
+    if (!revisionCollection) return deny('Not found', 404)
+    if (revisionCollection === CHILDREN) {
       return tool === 'revision_get' ? deny('Not found', 404) : deny(CHILD_LOCK)
     }
   }
