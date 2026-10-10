@@ -17,3 +17,13 @@ describe('describeTarget', () => {
     expect(describeTarget('not a url')).toBe('(unparseable DATABASE_URL)')
   })
 })
+
+// Review finding (PR #26): without STORAGE=s3, setup put the seed media on
+// the machine running it, and the deployed site showed broken images.
+describe('openStorage', () => {
+  it('needs STORAGE to be explicit', async () => {
+    const { openStorage } = await import('./db-setup.mjs')
+    expect(() => openStorage({})).toThrow(/STORAGE=s3/)
+    expect(openStorage({ STORAGE: 'local' })).toBeDefined()
+  })
+})
