@@ -60,10 +60,12 @@ export async function guardEmDashApi(context: APIContext, next: MiddlewareNext):
   if (!path.startsWith(API)) return undefined
   // EmDash's database snapshot (every table, child profiles included) is
   // public to its auth middleware, which leaves the user unresolved here, so
-  // it can't be guarded per role. The site doesn't use preview services:
-  // only preview-signed requests reach it.
-  if (path === `${API}snapshot` && !request.headers.has('X-Preview-Signature')) {
-    return json({ error: { code: 'FORBIDDEN_BY_POLICY', message: 'Snapshots are only available to preview services.' } }, 403)
+  // it can't be guarded per role. A request with an invalid preview signature
+  // falls back to the session user, and Editors may read it. The site doesn't
+  // use preview services, so it's closed to everyone; `npm run data export`
+  // covers full copies.
+  if (path === `${API}snapshot`) {
+    return json({ error: { code: 'FORBIDDEN_BY_POLICY', message: 'Snapshots are disabled on this site.' } }, 403)
   }
   const user = (context.locals as { user?: GuardUser }).user
   if (!isRestricted(user)) return undefined
@@ -140,16 +142,23 @@ async function filterMcpResponse(response: Response): Promise<Response> {
 
 async function guardRest(context: APIContext, ctx: GuardContext, next: MiddlewareNext): Promise<Response> {
   const { request, url } = context
+  // EmDash parses bodies as JSON whatever their Content-Type, so the guard
+  // does too, and refuses a body it can't read rather than checking nothing.
   let body: Record<string, any> | undefined
-  if (request.method !== 'GET' && (request.headers.get('content-type') ?? '').includes('application/json')) {
-    try {
-      body = await request.clone().json()
-    } catch {
-      body = undefined
+  let unreadable = false
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    const text = await request.clone().text()
+    if (text.trim()) {
+      try {
+        body = JSON.parse(text)
+      } catch {
+        unreadable = true
+      }
     }
   }
   const op = restOperation(request.method, url.pathname, body, url.searchParams)
   if (!op) return next()
+  if (unreadable) return json({ error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } }, 400)
   const decision = await checkOperation(op, ctx)
   if (decision.allow === false) {
     const status = decision.status ?? 403
