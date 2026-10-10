@@ -310,6 +310,80 @@ describe('syncStaticPages: overlapping runs', () => {
   })
 })
 
+// Review finding (PRs #13/#14, Step 22): a Spanish slot created without
+// `translationOf` isn't linked to its English row, and the overlapping-runs
+// cleanup trashed it, translation and all.
+describe('syncStaticPages: unlinked translations', () => {
+  const opts = { baseUrl: 'http://x', token: 't', pagesDir }
+  const manifests = [copyFor('/ways-to-give')]
+  const heading = (db: ReturnType<typeof fakeEmDash>, locale: string) =>
+    db.items.filter((i) => i.collection === 'copy_ways_to_give' && i.data.key === 'hero.heading' && i.locale === locale)
+  // As an editor or an AI assistant would: a new Spanish entry, not "translate".
+  const unlinked = (db: ReturnType<typeof fakeEmDash>, value: string) =>
+    db.client.create('copy_ways_to_give', { status: 'draft', locale: 'es', data: { key: 'hero.heading', value } })
+
+  it('moves the text onto the empty linked row before trashing the duplicate', async () => {
+    const db = fakeEmDash()
+    await syncStaticPages({ ...opts, client: db.client, manifests })
+    const english = heading(db, 'en')[0]
+    await unlinked(db, 'Formas de ayudar')
+
+    const result = await syncStaticPages({ ...opts, client: db.client, manifests })
+
+    expect(result).toMatchObject({ translationsRescued: 1, duplicatesRemoved: 1, translationConflicts: [] })
+    expect(heading(db, 'es')).toMatchObject([{ translationGroup: english.translationGroup, status: 'published', data: { value: 'Formas de ayudar' } }])
+  })
+
+  it('creates the linked row from the duplicate when there is none', async () => {
+    const db = fakeEmDash()
+    await syncStaticPages({ ...opts, client: db.client, manifests })
+    const english = heading(db, 'en')[0]
+    await db.client.delete('copy_ways_to_give', heading(db, 'es')[0].id)
+    await unlinked(db, 'Formas de ayudar')
+
+    const result = await syncStaticPages({ ...opts, client: db.client, manifests })
+
+    expect(result.translationsRescued).toBe(1)
+    expect(heading(db, 'es')).toMatchObject([{ translationGroup: english.translationGroup, status: 'published', data: { value: 'Formas de ayudar' } }])
+  })
+
+  it('trashes nothing and reports a conflict when the translations differ', async () => {
+    const db = fakeEmDash()
+    await syncStaticPages({ ...opts, client: db.client, manifests })
+    heading(db, 'es')[0].data.value = 'Formas de dar'
+    await unlinked(db, 'Formas de ayudar')
+
+    const result = await syncStaticPages({ ...opts, client: db.client, manifests })
+
+    expect(result).toMatchObject({ translationsRescued: 0, duplicatesRemoved: 0, translationConflicts: ['/ways-to-give#hero.heading (es)'] })
+    expect(heading(db, 'es').map((i) => i.data.value).sort()).toEqual(['Formas de ayudar', 'Formas de dar'])
+  })
+
+  it('reports instead of overwriting an editor draft on the linked row', async () => {
+    const db = fakeEmDash()
+    await syncStaticPages({ ...opts, client: db.client, manifests })
+    heading(db, 'es')[0].draftRevisionId = 'rev-draft'
+    await unlinked(db, 'Formas de ayudar')
+
+    const result = await syncStaticPages({ ...opts, client: db.client, manifests })
+
+    expect(result.translationConflicts).toEqual(['/ways-to-give#hero.heading (es)'])
+    expect(heading(db, 'es')).toHaveLength(2)
+  })
+
+  it('still trashes a duplicate that only repeats the kept text', async () => {
+    const db = fakeEmDash()
+    await syncStaticPages({ ...opts, client: db.client, manifests })
+    heading(db, 'es')[0].data.value = 'Formas de ayudar'
+    await unlinked(db, 'Formas de ayudar')
+
+    const result = await syncStaticPages({ ...opts, client: db.client, manifests })
+
+    expect(result).toMatchObject({ translationsRescued: 0, duplicatesRemoved: 1, translationConflicts: [] })
+    expect(heading(db, 'es')).toHaveLength(1)
+  })
+})
+
 describe('manifestSources', () => {
   it('maps each manifest module to the page next to it', () => {
     const manifest = defineCopy('/contact', { 'hero.heading': { label: 'Heading', default: 'Contact' } })
