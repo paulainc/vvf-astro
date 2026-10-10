@@ -32,6 +32,8 @@ Text has a maximum length so it fits the design; if a change is too long, you'll
 - Every page also exists under `/es` (for example `/es/ways-to-give`). The language switch (EN | ES) is in the header.
 - Each Page copy entry and content item has an English and a Spanish version. If the Spanish one is empty, the site shows the English text there.
 - To translate, edit the Spanish version — or ask your assistant to draft it. **Translations are always saved as drafts**: read them, fix the tone, then publish. Please don't publish machine translations without reading them.
+- A page shows up in Spanish for search engines once its **Spanish SEO title** is filled in, so translate that first. Texts you haven't translated yet show in English.
+- Unpublishing something in English takes it down in Spanish too.
 
 ## What you'll be stopped from doing (and why)
 
