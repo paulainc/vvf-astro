@@ -1316,18 +1316,18 @@
           "tier_name": "Benefactor",
           "price": "2.500 $/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report",
-            "Visibility in branding (website, email campaigns, social media, and events)",
-            "Board Donor Plaque"
+            "Inclusión en el informe anual",
+            "Visibilidad de marca (sitio web, campañas de correo electrónico, redes sociales y eventos)",
+            "Placa de donante de la junta"
           ],
           "activity_benefits": [
-            "Participation in the annual gala speech",
-            "Participation in the annual mission trip",
-            "Participation in the annual Board review"
+            "Participación en el discurso de la gala anual",
+            "Participación en el viaje misionero anual",
+            "Participación en la revisión anual de la junta"
           ],
           "promotional_benefits": [
-            "(5) Polo shirts with the foundation’s logo",
-            "(25) Foundation stickers"
+            "(5) Polos con el logotipo de la fundación",
+            "(25) Pegatinas de la fundación"
           ],
           "order": 1
         }
@@ -1342,13 +1342,13 @@
           "tier_name": "Líder",
           "price": "1.000 $/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report",
-            "Visibility in branding (website, email campaigns, social media, and events)",
-            "Board Donor Plaque"
+            "Inclusión en el informe anual",
+            "Visibilidad de marca (sitio web, campañas de correo electrónico, redes sociales y eventos)",
+            "Placa de donante de la junta"
           ],
           "promotional_benefits": [
-            "(5) Polo shirts with the foundation’s logo",
-            "(25) Foundation stickers"
+            "(5) Camisas tipo polo con el logotipo de la fundación",
+            "(25) Pegatinas de la fundación"
           ],
           "order": 2
         }
@@ -1363,11 +1363,11 @@
           "tier_name": "Asesor",
           "price": "$500/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report",
-            "Visibility in branding (website, email campaigns, social media, and events)"
+            "Inclusión en el informe anual",
+            "Visibilidad en la marca (sitio web, campañas de correo electrónico, redes sociales y eventos)"
           ],
           "promotional_benefits": [
-            "(25) Foundation stickers"
+            "(25) Pegatinas de la fundación"
           ],
           "order": 3
         }
@@ -1382,10 +1382,10 @@
           "tier_name": "Amigo",
           "price": "$250/año",
           "recognition_benefits": [
-            "Inclusion in the Annual Report"
+            "Inclusión en el informe anual"
           ],
           "promotional_benefits": [
-            "(25) Foundation stickers"
+            "(25) Pegatinas de la fundación"
           ],
           "order": 4
         }
