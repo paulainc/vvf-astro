@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alignPages, mergeTables, pageStrings, translate, linkKey } from './align.mjs'
+import { alignPages, corrected, mergeTables, pageStrings, translate, linkKey } from './align.mjs'
 
 const en = `<html><head><title>Ways to Give | VVF</title><meta name="description" content="Give today."></head>
 <body><div class="hero"><h1>Make a gift today</h1><img alt="A smiling girl" src="a.jpg"><a class="button">Donate</a></div>
@@ -65,5 +65,15 @@ describe('alignPages with menus that differ', () => {
     expect(linkKey('/es')).toBe('/')
     expect(linkKey('#top')).toBeUndefined()
     expect(linkKey('mailto:a@b.org')).toBeUndefined()
+  })
+})
+
+// Review finding (PR #15): the alignment paired "Financials & Transparency"
+// with "Nuestro equipo".
+describe('corrected', () => {
+  it('overrides a pair the alignment got wrong and keeps the rest', () => {
+    const table = corrected(new Map([['Financials & Transparency', 'Nuestro equipo'], ['Our Team', 'Nuestro equipo']]))
+    expect(translate(table, 'Financials & Transparency')).toBe('Finanzas y transparencia')
+    expect(translate(table, 'Our Team')).toBe('Nuestro equipo')
   })
 })

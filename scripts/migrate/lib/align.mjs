@@ -109,6 +109,15 @@ export function alignPages(enHtml, esHtml) {
 }
 
 // Merges several page tables; the first translation seen for a string wins.
+// Pairs the alignment gets wrong on the live pages, corrected here so a
+// regenerated table keeps them (review finding on PR #15: the
+// "Financials & Transparency" link lined up with "Nuestro equipo").
+export const ALIGNMENT_CORRECTIONS = new Map([['Financials & Transparency', 'Finanzas y transparencia']])
+
+export function corrected(table) {
+  return mergeTables([ALIGNMENT_CORRECTIONS, table])
+}
+
 export function mergeTables(tables) {
   const merged = new Map()
   for (const t of tables) for (const [k, v] of t) if (!merged.has(k)) merged.set(k, v)
