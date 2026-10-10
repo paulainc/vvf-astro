@@ -9,7 +9,7 @@ const locale = localeFromPath(Astro.originPathname)
 
 const child = await getChildBySlug(Astro.params.slug!, locale)
 if (!child) return new Response('Not found', { status: 404 })
-const embedUrl = sponsorChildEmbedUrl(child.slug)
+const embedUrl = sponsorChildEmbedUrl(child)
 ---
 
 <PageLayout
