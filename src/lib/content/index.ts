@@ -93,7 +93,7 @@ async function queryLocale(collection: string, filter: QueryFilter, locale: Loca
 const OTHER_LOCALE: Record<Locale, Locale> = { en: 'es', es: 'en' }
 
 // English entries, in query order, each swapped for its translation in
-// `locale` when one exists; entries that exist only in `locale` follow.
+// `locale` when one exists.
 // English lists skip the Spanish query unless `withSlugs` (detail pages need
 // to know whether a translation exists).
 async function listEntries(
@@ -125,17 +125,11 @@ async function listEntries(
     if (!t) return { slug: e.slug ?? '', data: e.data, fallbackLocale: DEFAULT_LOCALE, slugs, variants }
     return { slug: t.slug ?? '', data: t.data, enSlug: e.slug, slugs, variants }
   })
-  // Entries that exist only in the other locale are listed only there.
-  const onlyOther =
-    locale === DEFAULT_LOCALE
-      ? []
-      : [...byGroup.values()].map((e) => ({
-          slug: e.slug ?? '',
-          data: e.data,
-          slugs: { [other]: e.slug ?? '' },
-          variants: { [other]: e.data },
-        }))
-  return [...resolved, ...onlyOther]
+  // A translation is shown only while its English entry is live: unpublishing
+  // (or hiding, e.g. a child profile's `published` flag) the English entry
+  // takes every locale down with it. Translations left in `byGroup` have no
+  // live English entry and are dropped.
+  return resolved
 }
 
 function matchesSlug(e: LocalizedEntry, slug: string): boolean {
@@ -547,9 +541,13 @@ async function storedSlots(route: string, locale: Locale): Promise<Map<string, S
 }
 
 // A page's declared copy slots in `locale` (each falling back to English,
-// then to its default from code), plus the locales that have at least one
-// slot value of their own — a static page "exists" in a locale for hreflang
-// purposes only when it has its own copy there.
+// then to its default from code), plus the locales the page exists in for
+// hreflang and the sitemap: English always, another locale once its SEO
+// title is translated. Pages are partly translated by design (names, emails
+// and numbers stay as they are), so a translated SEO title — what search
+// results show — is the signal that someone translated the page.
+const SEO_TITLE_KEY = 'seo.title'
+
 export async function getPageCopy<S extends Record<string, SlotSpec>>(
   manifest: CopyManifest<S>,
   locale: Locale = DEFAULT_LOCALE
@@ -557,13 +555,8 @@ export async function getPageCopy<S extends Record<string, SlotSpec>>(
   const byLocale = new Map(await Promise.all(LOCALES.map(async (l) => [l, await storedSlots(manifest.route, l)] as const)))
   const english = byLocale.get(DEFAULT_LOCALE)!
   const copy = resolveCopy(manifest, { requested: byLocale.get(locale) ?? english, english })
-  const declared = Object.keys(manifest.slots)
-  const hasOwnValue = (slots: Map<string, StoredSlot>) =>
-    declared.some((k) => {
-      const v = slots.get(k)
-      return Boolean((v?.value && v.value.trim()) || (v?.richValue && v.richValue.length) || v?.imageUrl)
-    })
-  const locales = LOCALES.filter((l) => l === DEFAULT_LOCALE || hasOwnValue(byLocale.get(l)!))
+  const hasOwnSeoTitle = (slots: Map<string, StoredSlot>) => Boolean(slots.get(SEO_TITLE_KEY)?.value?.trim())
+  const locales = LOCALES.filter((l) => l === DEFAULT_LOCALE || hasOwnSeoTitle(byLocale.get(l)!))
   return { copy, locales }
 }
 
