@@ -30,12 +30,16 @@ When content for the requested locale is missing, the site SHALL fall back to En
 - **WHEN** `/es/events/<slug>` is requested and no event with that slug exists in either locale
 - **THEN** the site responds 404
 
+#### Scenario: English item taken down
+- **WHEN** an item's English version is unpublished or hidden (for a child profile, its `published` flag turned off) while its Spanish version is still published
+- **THEN** the item is hidden under `/es` as well: it is left out of Spanish lists and its `/es` detail URL responds 404
+
 #### Scenario: Spanish copy slot missing
 - **WHEN** a Spanish static page renders and one of its copy slots has no Spanish value
 - **THEN** that slot shows its English value and the rest of the page shows Spanish
 
 ### Requirement: Language signals for search engines
-Each page SHALL output a canonical URL and `hreflang` alternates (`en-US`, `es-VE`, `x-default` pointing at English) only for locales in which the page has its own content. A page served entirely from English fallback under `/es` SHALL set its canonical URL to the English URL.
+Each page SHALL output a canonical URL and `hreflang` alternates (`en-US`, `es-VE`, `x-default` pointing at English) only for locales in which the page has its own content. A static page has its own Spanish content once its Spanish SEO title is filled in; other copy slots may still fall back to English. A page served entirely from English fallback under `/es` SHALL set its canonical URL to the English URL.
 
 #### Scenario: Fully translated page
 - **WHEN** a page has both English and Spanish content
