@@ -101,6 +101,13 @@ export interface SyncStaticPagesResult {
   slotsMarkedStale: number
   // Duplicate rows (e.g. from overlapping sync runs) moved to trash.
   duplicatesRemoved: number
+  // Translations found on a row not linked to its English row (created
+  // without `translationOf`), moved onto the linked row before the duplicate
+  // was trashed.
+  translationsRescued: number
+  // Slots with two different translations in one locale: nothing is trashed
+  // and a person has to choose (`<route>#<key> (<locale>)`).
+  translationConflicts: string[]
   // Slots whose metadata changed in code but that have an unpublished editor
   // draft: left alone so the sync never publishes someone's draft.
   slotsSkippedForDraft: string[]
@@ -136,6 +143,8 @@ export async function syncStaticPages(options: SyncStaticPagesOptions): Promise<
     slotsUpdated: 0,
     slotsMarkedStale: 0,
     duplicatesRemoved: 0,
+    translationsRescued: 0,
+    translationConflicts: [],
     slotsSkippedForDraft: [],
   }
 
@@ -158,12 +167,20 @@ function routesToSync(pagesDir: string, manifests: ManifestSource[]): StaticPage
 // in that English row's translation group; every other row for the key is
 // moved to trash. Returns the kept rows. Rows normally can't be duplicated —
 // this heals what overlapping sync runs may have created.
+//
+// With `translationOf` (the translated fields of a row, when it has any), a
+// translation is never thrown away: a duplicate holding text the kept row
+// lacks — typically a translation created without `translationOf`, so not
+// linked to its English row — has its text moved onto the kept (linked) row
+// first, which is created if missing. Duplicates holding a different text
+// than the kept row, or than each other, are all left in place and reported.
 async function dedupe(
   client: Client,
   collection: string,
   byLocale: Map<Locale, Item[]>,
   keyOf: (item: Item) => string,
-  result: SyncStaticPagesResult
+  result: SyncStaticPagesResult,
+  translationOf?: (item: Item) => Record<string, unknown> | undefined
 ): Promise<Map<Locale, Item[]>> {
   const oldestFirst = (a: Item, b: Item) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
   const keptEnglish = new Map<string, Item>()
@@ -173,21 +190,69 @@ async function dedupe(
   const kept = new Map<Locale, Item[]>()
   const discard: Item[] = []
   for (const [locale, items] of byLocale) {
-    const keep = new Map<string, Item>()
-    for (const item of [...items].sort(oldestFirst)) {
-      const key = keyOf(item)
+    const rows = new Map<string, Item[]>()
+    for (const item of [...items].sort(oldestFirst)) rows.set(keyOf(item), [...(rows.get(keyOf(item)) ?? []), item])
+    const keep: Item[] = []
+    for (const [key, candidates] of rows) {
       const english = keptEnglish.get(key)
-      const belongs = locale === DEFAULT_LOCALE ? english?.id === item.id : !english || item.translationGroup === english.translationGroup
-      if (belongs && !keep.has(key)) keep.set(key, item)
-      else discard.push(item)
+      const belongs = (item: Item) =>
+        locale === DEFAULT_LOCALE ? english?.id === item.id : !english || item.translationGroup === english.translationGroup
+      let keeper = candidates.find(belongs)
+      let others = candidates.filter((item) => item !== keeper)
+      if (locale !== DEFAULT_LOCALE && english && translationOf) {
+        const outcome = await rescueTranslation(client, collection, locale, english, keeper, others, translationOf, result, key)
+        keeper = outcome.keeper
+        others = outcome.discard
+      }
+      if (keeper) keep.push(keeper)
+      discard.push(...others)
     }
-    kept.set(locale, [...keep.values()])
+    kept.set(locale, keep)
   }
   for (const item of discard) {
     await client.delete(collection, item.id)
     result.duplicatesRemoved += 1
   }
   return kept
+}
+
+// Decides what happens to a key's duplicate rows in a translated locale so
+// that no translated text is lost; returns the row to keep and the rows that
+// are safe to trash.
+async function rescueTranslation(
+  client: Client,
+  collection: string,
+  locale: Locale,
+  english: Item,
+  keeper: Item | undefined,
+  others: Item[],
+  translationOf: (item: Item) => Record<string, unknown> | undefined,
+  result: SyncStaticPagesResult,
+  key: string
+): Promise<{ keeper: Item | undefined; discard: Item[] }> {
+  const same = (a: Record<string, unknown>, b: Record<string, unknown>) => JSON.stringify(a) === JSON.stringify(b)
+  const kept = keeper && translationOf(keeper)
+  const withText = others.filter((item) => translationOf(item) && !(kept && same(translationOf(item)!, kept)))
+  const texts = withText.map((item) => translationOf(item)!).filter((t, i, all) => all.findIndex((u) => same(t, u)) === i)
+  const empty = others.filter((item) => !withText.includes(item))
+  if (texts.length === 0) return { keeper, discard: others }
+  // Two different translations, or one that the linked row (or its open
+  // editor draft) would overwrite: a person chooses.
+  if (texts.length > 1 || kept || keeper?.draftRevisionId) {
+    result.translationConflicts.push(`${key} (${locale})`)
+    return { keeper, discard: empty }
+  }
+  const text = texts[0]
+  if (keeper) {
+    await client.update(collection, keeper.id, { data: text, _rev: keeper._rev })
+    await client.publish(collection, keeper.id)
+  } else {
+    const source = withText[0]
+    keeper = await client.create(collection, { status: 'draft', locale, translationOf: english.id, data: { ...source.data, ...text } })
+    await client.publish(collection, keeper.id)
+  }
+  result.translationsRescued += 1
+  return { keeper, discard: others }
 }
 
 async function syncPages(client: Client, routes: StaticPageRoute[], result: SyncStaticPagesResult) {
@@ -260,13 +325,21 @@ function slotDefault(spec: SlotSpec): Record<string, unknown> {
 
 const slotId = (route: unknown, key: unknown) => `${route}#${key}`
 
+// A slot row's translated value fields, when it holds any text or image.
+function slotTranslation(item: Item): Record<string, unknown> | undefined {
+  const { value, rich_value, image_value } = item.data as Record<string, any>
+  const hasValue = (typeof value === 'string' && value.trim()) || (Array.isArray(rich_value) && rich_value.length) || image_value
+  return hasValue ? { value: value ?? null, rich_value: rich_value ?? null, image_value: image_value ?? null } : undefined
+}
+
 async function syncSlots(client: Client, manifests: ManifestSource[], result: SyncStaticPagesResult) {
   const byLocale = await dedupe(
     client,
     'page_copy',
     new Map(await Promise.all(LOCALES.map(async (l) => [l, await listAll(client, 'page_copy', l)] as const))),
     (item) => slotId(item.data.route_path, item.data.key),
-    result
+    result,
+    slotTranslation
   )
   const english = byLocale.get(DEFAULT_LOCALE)!
   const others = new Map([...byLocale].filter(([l]) => l !== DEFAULT_LOCALE))

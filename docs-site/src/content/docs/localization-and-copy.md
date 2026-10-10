@@ -16,7 +16,7 @@ The site serves **en-US** at unprefixed paths and **es-VE** under `/es`, as the 
 
 Every content getter in `src/lib/content/index.ts` takes a locale. For `es` it returns each entry's Spanish version when one exists and the English entry otherwise (marked `fallbackLocale: 'en'`); detail getters return `undefined` only when the entry exists in neither locale, and the page responds 404. Pages never implement fallback themselves.
 
-A page served from English fallback under `/es` gets `<main lang="en-US">`, its canonical points at the English URL and it lists no `es-VE` alternate. Translated pages are their own canonical and list both locales (`hreflang`), via the `alternates` prop on `PageLayout`.
+A page served from English fallback under `/es` gets `<main lang="en-US">`, its canonical points at the English URL and it lists no `es-VE` alternate. Translated pages are their own canonical and list both locales (`hreflang`), via the `alternates` prop on `PageLayout`. A static page counts as translated once its Spanish SEO title (`seo.title`) is filled in (`getPageCopy` in `src/lib/content/index.ts`); its other texts may still fall back to English. A CMS item counts as translated when it has a Spanish version, and a Spanish version is only shown while its English one is live.
 
 ## Copy slots
 
