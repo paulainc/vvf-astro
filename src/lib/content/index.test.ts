@@ -524,6 +524,7 @@ describe('locale resolution', () => {
 
 describe('getPageCopy', () => {
   const manifest = defineCopy('/ways-to-give', {
+    'seo.title': { label: 'SEO title', default: 'Ways to Give' },
     'hero.heading': { label: 'Hero heading', default: 'Ways to give' },
     'hero.body': { label: 'Hero text', default: 'Every gift counts.' },
   })
@@ -536,20 +537,29 @@ describe('getPageCopy', () => {
     })
   }
 
-  it('resolves slots with es -> en -> default fallback and reports locales with own copy', async () => {
+  it('resolves slots with es -> en -> default fallback, and counts the page as Spanish once its SEO title is', async () => {
     copyRows({
       en: [{ key: 'hero.heading', value: 'Ways to Give' }],
-      es: [{ key: 'hero.heading', value: 'Formas de ayudar' }],
+      es: [
+        { key: 'seo.title', value: 'Formas de ayudar | VVF' },
+        { key: 'hero.heading', value: 'Formas de ayudar' },
+      ],
     })
     const { copy, locales } = await getPageCopy(manifest, 'es')
-    expect(copy).toEqual({ 'hero.heading': 'Formas de ayudar', 'hero.body': 'Every gift counts.' })
+    expect(copy).toEqual({ 'seo.title': 'Formas de ayudar | VVF', 'hero.heading': 'Formas de ayudar', 'hero.body': 'Every gift counts.' })
     expect(locales).toEqual(['en', 'es'])
   })
 
-  it('reports English only when no Spanish slot has a value', async () => {
-    copyRows({ en: [{ key: 'hero.heading', value: 'Ways to Give' }], es: [{ key: 'hero.heading', value: '' }] })
+  it('reports English only while the Spanish SEO title is empty, even with other Spanish text', async () => {
+    copyRows({
+      en: [{ key: 'hero.heading', value: 'Ways to Give' }],
+      es: [
+        { key: 'seo.title', value: ' ' },
+        { key: 'hero.heading', value: 'Formas de ayudar' },
+      ],
+    })
     const { copy, locales } = await getPageCopy(manifest, 'es')
-    expect(copy['hero.heading']).toBe('Ways to Give')
+    expect(copy['hero.heading']).toBe('Formas de ayudar')
     expect(locales).toEqual(['en'])
   })
 })
