@@ -170,15 +170,18 @@
     "appealPanel.caption": "Así será el centro en La Guaira. El centro aún no está construido. Todas las imágenes de esta página son representaciones generadas por IA.",
     "appealPanel.title.1": "Alojamiento",
     "appealPanel.text.1": "Un lugar seguro donde alojarse para las familias cuyos hogares fueron destruidos en los terremotos de junio de 2026.",
+    "appealPanel.imageAlt.1": "Familias llegando al patio del futuro centro de apoyo de VVF.",
     "appealPanel.title.2": "Atención médica",
     "appealPanel.text.2": "Revisiones, medicamentos y tratamiento para los niños y sus familias en el centro.",
+    "appealPanel.imageAlt.2": "Una enfermera examina a una niña mientras su madre está sentada a su lado.",
     "appealPanel.title.3": "Nutrición",
     "appealPanel.text.3": "Comidas diarias para los niños que se alojen en el centro de apoyo de La Guaira.",
     "appealPanel.label.1": "Donar a la campaña",
     "appealPanel.label.2": "Más información",
     "sectionTitle2.heading": "Preguntas frecuentes",
     "appealPanel.cardsLabel": "En qué se utilizará su donativo",
-    "pastelCard.label.1": "Vamos a comprobarlo"
+    "pastelCard.label.1": "Vamos a comprobarlo",
+    "appealPanel.cards.nutritionAlt": "Niños comiendo juntos una comida caliente en el comedor del centro."
   },
   "/resources/category/stories": {
     "seo.title": "Historias | Recursos | Fundación Victoria Venezuela",
@@ -325,8 +328,10 @@
     "appealPanel.cardsLabel": "En qué se utilizará su donativo",
     "appealPanel.title.1": "Alojamiento",
     "appealPanel.text.1": "Un lugar seguro donde alojarse para las familias cuyos hogares fueron destruidos en los terremotos de junio de 2026.",
+    "appealPanel.imageAlt.1": "Familias llegando al patio del futuro centro de apoyo de VVF.",
     "appealPanel.title.2": "Atención médica",
     "appealPanel.text.2": "Revisiones, medicamentos y tratamiento para los niños y sus familias en el centro.",
+    "appealPanel.imageAlt.2": "Una enfermera examina a una niña mientras su madre está sentada a su lado.",
     "appealPanel.title.3": "Nutrición",
     "appealPanel.text.3": "Comidas diarias para los niños que se alojen en el centro de apoyo de La Guaira.",
     "appealPanel.label.1": "Donar a la campaña",
@@ -354,7 +359,8 @@
     "responseTimeline.title.3": "Fortalecimiento",
     "responseTimeline.text.3": "Ayudando a las familias a recuperar la estabilidad y la rutina",
     "responseTimeline.title.4": "Sostenibilidad",
-    "responseTimeline.text.4": "Apoyo a la recuperación y resiliencia a largo plazo."
+    "responseTimeline.text.4": "Apoyo a la recuperación y resiliencia a largo plazo.",
+    "appealPanel.cards.nutritionAlt": "Niños comiendo juntos una comida caliente en el comedor del centro."
   },
   "/events/*": {
     "hero.label.1": "Comprar entradas",
