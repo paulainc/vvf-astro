@@ -60,10 +60,12 @@ export async function guardEmDashApi(context: APIContext, next: MiddlewareNext):
   if (!path.startsWith(API)) return undefined
   // EmDash's database snapshot (every table, child profiles included) is
   // public to its auth middleware, which leaves the user unresolved here, so
-  // it can't be guarded per role. The site doesn't use preview services:
-  // only preview-signed requests reach it.
-  if (path === `${API}snapshot` && !request.headers.has('X-Preview-Signature')) {
-    return json({ error: { code: 'FORBIDDEN_BY_POLICY', message: 'Snapshots are only available to preview services.' } }, 403)
+  // it can't be guarded per role. A request with an invalid preview signature
+  // falls back to the session user, and Editors may read it. The site doesn't
+  // use preview services, so it's closed to everyone; `npm run data export`
+  // covers full copies.
+  if (path === `${API}snapshot`) {
+    return json({ error: { code: 'FORBIDDEN_BY_POLICY', message: 'Snapshots are disabled on this site.' } }, 403)
   }
   const user = (context.locals as { user?: GuardUser }).user
   if (!isRestricted(user)) return undefined
