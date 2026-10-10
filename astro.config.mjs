@@ -79,6 +79,20 @@ export default defineConfig({
     emdash({
       database,
       storage,
+      plugins: [
+        // Publishing activity log (who published what, and how); see the module.
+        {
+          id: 'activity-log',
+          version: '1.0.0',
+          format: 'standard',
+          entrypoint: fileURLToPath(new URL('./src/plugins/activityLog.ts', import.meta.url)),
+          // content:read: EmDash only runs publish hooks for plugins that hold it.
+          capabilities: ['content:read'],
+          allowedHosts: [],
+          storage: { entries: { indexes: ['timestamp', 'action', 'collection', 'userId'] } },
+          adminPages: [{ path: '/activity', label: 'Activity', icon: 'history' }],
+        },
+      ],
     }),
   ],
 });
