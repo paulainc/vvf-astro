@@ -142,16 +142,23 @@ async function filterMcpResponse(response: Response): Promise<Response> {
 
 async function guardRest(context: APIContext, ctx: GuardContext, next: MiddlewareNext): Promise<Response> {
   const { request, url } = context
+  // EmDash parses bodies as JSON whatever their Content-Type, so the guard
+  // does too, and refuses a body it can't read rather than checking nothing.
   let body: Record<string, any> | undefined
-  if (request.method !== 'GET' && (request.headers.get('content-type') ?? '').includes('application/json')) {
-    try {
-      body = await request.clone().json()
-    } catch {
-      body = undefined
+  let unreadable = false
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    const text = await request.clone().text()
+    if (text.trim()) {
+      try {
+        body = JSON.parse(text)
+      } catch {
+        unreadable = true
+      }
     }
   }
   const op = restOperation(request.method, url.pathname, body, url.searchParams)
   if (!op) return next()
+  if (unreadable) return json({ error: { code: 'INVALID_JSON', message: 'Request body must be valid JSON.' } }, 400)
   const decision = await checkOperation(op, ctx)
   if (decision.allow === false) {
     const status = decision.status ?? 403
