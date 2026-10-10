@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
 import { load } from 'cheerio'
 import { fetchText } from './lib/http.mjs'
-import { alignPages, mergeTables, translate } from './lib/align.mjs'
+import { alignPages, corrected, mergeTables, translate } from './lib/align.mjs'
 import { LIVE_BASE_URL, ROOT_DIR, SNAPSHOT_DIR } from './lib/paths.mjs'
 import { createSection } from './lib/report.mjs'
 import { sanitizeRichText, toPortableText } from './lib/richtext.mjs'
@@ -99,7 +99,7 @@ export async function pageCopy() {
     const { en, es } = await livePair(new URL(c.url).pathname)
     childTables.push(alignPages(en, es))
   }
-  const table = mergeTables([mergeTables(publicTables), ...childTables])
+  const table = corrected(mergeTables([mergeTables(publicTables), ...childTables]))
   // The committed table must not carry child data: pages that list children
   // (Sponsor a Child, the listing) contain names and dreams.
   const childEs = readJson(path.join(SNAPSHOT_DIR, 'es/children.json'), { items: [] }).items
@@ -107,7 +107,7 @@ export async function pageCopy() {
     .flatMap((c) => [c.displayName, c.dream, c.about])
     .filter((v) => typeof v === 'string' && v.trim().length > 2)
   const mentionsChild = (text) => childStrings.some((v) => text.includes(v))
-  const publicTable = new Map([...mergeTables(publicTables)].filter(([en, es]) => !mentionsChild(en) && !mentionsChild(es)))
+  const publicTable = new Map([...corrected(mergeTables(publicTables))].filter(([en, es]) => !mentionsChild(en) && !mentionsChild(es)))
   mkdirSync(path.dirname(TRANSLATIONS_PATH), { recursive: true })
   writeFileSync(TRANSLATIONS_PATH, `${JSON.stringify(Object.fromEntries(publicTable), null, 2)}\n`)
 
